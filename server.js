@@ -14,28 +14,28 @@ app.use((req, res, next) => {
     next();
 });
 
-// ===== СОЗДАЕМ ДИРЕКТОРИИ (с обработкой ошибок) =====
+// ===== СОЗДАЕМ ДИРЕКТОРИИ =====
 const dirs = ['data'];
 dirs.forEach(dir => {
     const fullPath = path.join(__dirname, dir);
     if (!fs.existsSync(fullPath)) {
         try {
             fs.mkdirSync(fullPath, { recursive: true, mode: 0o777 });
-            console.log(`Created directory: ${fullPath}`);
+            console.log(`Created: ${fullPath}`);
         } catch (e) {
             console.warn(`Cannot create ${fullPath}: ${e.message}`);
         }
     }
 });
 
-// ===== MULTER С ИСПОЛЬЗОВАНИЕМ /tmp (решение проблемы с правами) =====
+// ===== MULTER (используем /tmp) =====
 const uploadDir = '/tmp/uploads';
 if (!fs.existsSync(uploadDir)) {
     try {
         fs.mkdirSync(uploadDir, { recursive: true, mode: 0o777 });
-        console.log(`Created temp uploads: ${uploadDir}`);
+        console.log(`Created: ${uploadDir}`);
     } catch (e) {
-        console.warn(`Cannot create temp uploads: ${e.message}`);
+        console.warn(`Cannot create ${uploadDir}: ${e.message}`);
     }
 }
 
@@ -57,6 +57,8 @@ const upload = multer({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+// ===== ВАЖНО: раздаем файлы из /tmp/uploads =====
+app.use('/uploads', express.static('/tmp/uploads'));
 
 // ===== СЕССИИ =====
 app.use(session({
@@ -73,7 +75,7 @@ const SERVICES_FILE = path.join(DATA_DIR, 'services.json');
 const PORTFOLIO_FILE = path.join(DATA_DIR, 'portfolio.json');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
-// ===== ИНИЦИАЛИЗАЦИЯ ДАННЫХ =====
+// ===== ИНИЦИАЛИЗАЦИЯ =====
 function initDataFiles() {
     const files = {
         [REQUESTS_FILE]: '[]',
@@ -86,9 +88,9 @@ function initDataFiles() {
         if (!fs.existsSync(filePath)) {
             try {
                 fs.writeFileSync(filePath, defaultContent);
-                console.log(`Created file: ${filePath}`);
+                console.log(`Created: ${filePath}`);
             } catch (e) {
-                console.error(`Error creating ${filePath}:`, e);
+                console.error(`Error:`, e);
             }
         }
     }
@@ -106,7 +108,7 @@ function initDataFiles() {
                 createdAt: new Date().toISOString()
             });
             fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-            console.log('Admin user created');
+            console.log('Admin created');
         }
     } catch (e) {
         console.error('Init error:', e);
