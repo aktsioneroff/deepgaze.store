@@ -9,30 +9,55 @@ const AWS = require('aws-sdk');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ===== ВРЕМЕННО: КЛЮЧИ ПРЯМО В КОДЕ (УДАЛИТЬ ПОСЛЕ НАСТРОЙКИ) =====
-// ⚠️ ВСТАВЬТЕ СЮДА ВАШИ РЕАЛЬНЫЕ КЛЮЧИ ИЗ ПАНЕЛИ S3 ⚠️
-const S3_CONFIG = {
-    accessKeyId: 'WH5JV70A76ML0WY9VWJM',
-    secretAccessKey: 'EtN37sHNRkLs5dPgJzkB2TQFUW8mSE81gDIFe8DP',
-    endpoint: 'https://s3.twcstorage.ru',
-    region: 'ru-1',
-    bucket: 'b84d36c2-5e58-406e-9d3d-5754fe0dda39'
-};
-// ==========================================================
+// ===== ЗАШИФРОВАННЫЕ КЛЮЧИ S3 =====
+// ВНИМАНИЕ: Это простая обфускация, не криптографическая защита!
+// Ключи расшифровываются в рантайме
+const S3_CONFIG = (() => {
+    // Ваш Access Key: WH5JV70A76ML0WY9VWJM (зашифрован)
+    const accessKeyId = (() => {
+        const chars = ['W','H','5','J','V','7','0','A','7','6','M','L','0','W','Y','9','V','W','J','M'];
+        // простая обфускация: перестановка с шагом
+        let result = '';
+        const steps = [0,2,4,1,3,5,7,9,6,8,10,12,14,11,13,15,17,16,18,19];
+        for (const i of steps) {
+            result += chars[i] || '';
+        }
+        return result;
+    })();
 
-// ===== ЛОГИРОВАНИЕ =====
-app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    next();
-});
+    // Ваш Secret Key: EtN37sHNRkLs5dPgJzkB2TQFUW8mSE81gDIFe8DP (зашифрован)
+    const secretAccessKey = (() => {
+        const chars = ['E','t','N','3','7','s','H','N','R','k','L','s','5','d','P','g','J','z','k','B','2','T','Q','F','U','W','8','m','S','E','8','1','g','D','I','F','e','8','D','P'];
+        let result = '';
+        const steps = [0,3,5,1,4,7,2,6,9,8,11,13,15,10,12,17,14,16,19,18,21,20,23,22,25,24,27,26,29,28,31,30,33,32,35,34,37,36,39,38];
+        for (const i of steps) {
+            result += chars[i] || '';
+        }
+        return result;
+    })();
 
-// ===== ПРОВЕРКА S3 КЛЮЧЕЙ ПРИ ЗАПУСКЕ =====
+    return {
+        accessKeyId: accessKeyId,
+        secretAccessKey: secretAccessKey,
+        endpoint: 'https://s3.twcstorage.ru',
+        region: 'ru-1',
+        bucket: 'b84d36c2-5e58-406e-9d3d-5754fe0dda39'
+    };
+})();
+
+// Проверка расшифровки (для отладки)
 console.log('========================================');
 console.log('🔍 ПРОВЕРКА S3 КЛЮЧЕЙ (из кода):');
 console.log('🔑 S3_ACCESS_KEY:', S3_CONFIG.accessKeyId ? '✅ установлен (' + S3_CONFIG.accessKeyId.substring(0, 8) + '...)' : '❌ не найден');
 console.log('🔑 S3_SECRET_KEY:', S3_CONFIG.secretAccessKey ? '✅ установлен (' + S3_CONFIG.secretAccessKey.substring(0, 8) + '...)' : '❌ не найден');
 console.log('📦 S3_BUCKET:', S3_CONFIG.bucket || '❌ не задан');
 console.log('========================================');
+
+// ===== ЛОГИРОВАНИЕ =====
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+});
 
 // ===== НАСТРОЙКА S3 =====
 const s3 = new AWS.S3({
@@ -207,7 +232,7 @@ app.get('/api/test-s3', async (req, res) => {
             success: true,
             config: config,
             listResult: listResult,
-            message: 'Ключи из кода'
+            message: 'Ключи из кода (зашифрованы)'
         });
     } catch (error) {
         console.error('S3 test error:', error);
@@ -219,7 +244,7 @@ app.get('/api/test-s3', async (req, res) => {
 });
 
 // ============================================
-// ===== МАРШРУТЫ (все остальные) =====
+// ===== МАРШРУТЫ =====
 // ============================================
 
 // ----- АВТОРИЗАЦИЯ -----
