@@ -15,7 +15,7 @@ app.use((req, res, next) => {
 });
 
 // ===== СОЗДАЕМ ДИРЕКТОРИИ (с обработкой ошибок) =====
-const dirs = ['data', 'uploads'];
+const dirs = ['data'];
 dirs.forEach(dir => {
     const fullPath = path.join(__dirname, dir);
     if (!fs.existsSync(fullPath)) {
@@ -24,12 +24,11 @@ dirs.forEach(dir => {
             console.log(`Created directory: ${fullPath}`);
         } catch (e) {
             console.warn(`Cannot create ${fullPath}: ${e.message}`);
-            // Продолжаем работу
         }
     }
 });
 
-// ===== MULTER С ИСПОЛЬЗОВАНИЕМ /tmp =====
+// ===== MULTER С ИСПОЛЬЗОВАНИЕМ /tmp (решение проблемы с правами) =====
 const uploadDir = '/tmp/uploads';
 if (!fs.existsSync(uploadDir)) {
     try {
@@ -282,7 +281,8 @@ app.post('/api/services', isAuthenticated, upload.single('photo'), (req, res) =>
         writeJSONFile(SERVICES_FILE, services);
         res.status(201).json(newService);
     } catch (e) {
-        res.status(500).json({ error: 'Ошибка' });
+        console.error('[SERVICES] Create error:', e);
+        res.status(500).json({ error: 'Ошибка создания услуги' });
     }
 });
 
@@ -302,7 +302,8 @@ app.put('/api/services/:id', isAuthenticated, upload.single('photo'), (req, res)
         writeJSONFile(SERVICES_FILE, services);
         res.json(services[index]);
     } catch (e) {
-        res.status(500).json({ error: 'Ошибка' });
+        console.error('[SERVICES] Update error:', e);
+        res.status(500).json({ error: 'Ошибка обновления' });
     }
 });
 
@@ -347,7 +348,8 @@ app.post('/api/portfolio', isAuthenticated, upload.single('photo'), (req, res) =
         writeJSONFile(PORTFOLIO_FILE, portfolio);
         res.status(201).json(newItem);
     } catch (e) {
-        res.status(500).json({ error: 'Ошибка' });
+        console.error('[PORTFOLIO] Create error:', e);
+        res.status(500).json({ error: 'Ошибка добавления работы' });
     }
 });
 
@@ -386,7 +388,8 @@ app.post('/api/users', isAdmin, (req, res) => {
         const { password, ...safeUser } = newUser;
         res.status(201).json(safeUser);
     } catch (e) {
-        res.status(500).json({ error: 'Ошибка' });
+        console.error('[USERS] Create error:', e);
+        res.status(500).json({ error: 'Ошибка создания пользователя' });
     }
 });
 
@@ -408,7 +411,8 @@ app.put('/api/users/:id', isAdmin, (req, res) => {
         const { password, ...safeUser } = users[index];
         res.json(safeUser);
     } catch (e) {
-        res.status(500).json({ error: 'Ошибка' });
+        console.error('[USERS] Update error:', e);
+        res.status(500).json({ error: 'Ошибка обновления' });
     }
 });
 
