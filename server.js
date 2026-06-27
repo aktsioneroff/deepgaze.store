@@ -9,46 +9,46 @@ const AWS = require('aws-sdk');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// ===== ВРЕМЕННО: КЛЮЧИ ПРЯМО В КОДЕ (УДАЛИТЬ ПОСЛЕ НАСТРОЙКИ) =====
+// ⚠️ ВСТАВЬТЕ СЮДА ВАШИ РЕАЛЬНЫЕ КЛЮЧИ ИЗ ПАНЕЛИ S3 ⚠️
+const S3_CONFIG = {
+    accessKeyId: 'WH5JV70A76ML0WY9VWJM',
+    secretAccessKey: 'EtN37sHNRkLs5dPgJzkB2TQFUW8mSE81gDIFe8DP',
+    endpoint: 'https://swift.twcstorage.ru',
+    region: 'ru-1',
+    bucket: 'b84d36c2-5e58-406e-9d3d-5754fe0dda39'
+};
+// ==========================================================
+
 // ===== ЛОГИРОВАНИЕ =====
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
 });
 
-// ===== ПРОВЕРКА ПЕРЕМЕННЫХ S3 ПРИ ЗАПУСКЕ =====
+// ===== ПРОВЕРКА S3 КЛЮЧЕЙ ПРИ ЗАПУСКЕ =====
 console.log('========================================');
-console.log('🔍 ПРОВЕРКА ПЕРЕМЕННЫХ S3:');
-console.log('📦 S3_BUCKET:', process.env.S3_BUCKET || '❌ не задан');
-console.log('🔑 S3_ACCESS_KEY:', process.env.S3_ACCESS_KEY ? '✅ установлен (' + process.env.S3_ACCESS_KEY.substring(0, 8) + '...)' : '❌ не найден');
-console.log('🔑 S3_SECRET_KEY:', process.env.S3_SECRET_KEY ? '✅ установлен (' + process.env.S3_SECRET_KEY.substring(0, 8) + '...)' : '❌ не найден');
-console.log('🌐 S3_ENDPOINT:', process.env.S3_ENDPOINT || '❌ не задан (используем default)');
-console.log('📍 S3_REGION:', process.env.S3_REGION || '❌ не задан (используем default)');
+console.log('🔍 ПРОВЕРКА S3 КЛЮЧЕЙ (из кода):');
+console.log('🔑 S3_ACCESS_KEY:', S3_CONFIG.accessKeyId ? '✅ установлен (' + S3_CONFIG.accessKeyId.substring(0, 8) + '...)' : '❌ не найден');
+console.log('🔑 S3_SECRET_KEY:', S3_CONFIG.secretAccessKey ? '✅ установлен (' + S3_CONFIG.secretAccessKey.substring(0, 8) + '...)' : '❌ не найден');
+console.log('📦 S3_BUCKET:', S3_CONFIG.bucket || '❌ не задан');
 console.log('========================================');
 
 // ===== НАСТРОЙКА S3 =====
-const s3Config = {
-    endpoint: process.env.S3_ENDPOINT || 'https://swift.twcstorage.ru',
-    accessKeyId: process.env.S3_ACCESS_KEY,
-    secretAccessKey: process.env.S3_SECRET_KEY,
-    region: process.env.S3_REGION || 'ru-1',
+const s3 = new AWS.S3({
+    endpoint: S3_CONFIG.endpoint,
+    accessKeyId: S3_CONFIG.accessKeyId,
+    secretAccessKey: S3_CONFIG.secretAccessKey,
+    region: S3_CONFIG.region,
     s3ForcePathStyle: true,
     signatureVersion: 'v4',
     httpOptions: {
         timeout: 30000,
         connectTimeout: 30000
     }
-};
+});
 
-// Проверяем, есть ли ключи
-if (!s3Config.accessKeyId || !s3Config.secretAccessKey) {
-    console.error('❌ ВНИМАНИЕ: S3 ключи не найдены! Загрузка фото НЕ БУДЕТ РАБОТАТЬ!');
-    console.error('   Добавьте переменные S3_ACCESS_KEY и S3_SECRET_KEY в настройках приложения');
-} else {
-    console.log('✅ S3 ключи найдены, подключаемся...');
-}
-
-const s3 = new AWS.S3(s3Config);
-const BUCKET_NAME = process.env.S3_BUCKET || 'b84d36c2-5e58-406e-9d3d-5754fe0dda39';
+const BUCKET_NAME = S3_CONFIG.bucket;
 
 // ===== ПУТИ К ДАННЫМ =====
 const DATA_DIR = path.join(__dirname, 'data');
@@ -180,12 +180,12 @@ async function uploadToS3(file, folder = '') {
 app.get('/api/test-s3', async (req, res) => {
     try {
         const config = {
-            endpoint: process.env.S3_ENDPOINT || 'не задан',
-            bucket: process.env.S3_BUCKET || 'не задан',
-            region: process.env.S3_REGION || 'не задан',
-            hasAccessKey: !!process.env.S3_ACCESS_KEY,
-            hasSecretKey: !!process.env.S3_SECRET_KEY,
-            accessKeyStart: process.env.S3_ACCESS_KEY ? process.env.S3_ACCESS_KEY.substring(0, 8) + '...' : 'нет'
+            endpoint: S3_CONFIG.endpoint,
+            bucket: S3_CONFIG.bucket,
+            region: S3_CONFIG.region,
+            hasAccessKey: !!S3_CONFIG.accessKeyId,
+            hasSecretKey: !!S3_CONFIG.secretAccessKey,
+            accessKeyStart: S3_CONFIG.accessKeyId ? S3_CONFIG.accessKeyId.substring(0, 8) + '...' : 'нет'
         };
         
         // Пробуем получить список файлов в бакете
@@ -207,7 +207,7 @@ app.get('/api/test-s3', async (req, res) => {
             success: true,
             config: config,
             listResult: listResult,
-            message: 'Проверьте, что все переменные заданы в Timeweb'
+            message: 'Ключи из кода'
         });
     } catch (error) {
         console.error('S3 test error:', error);
@@ -219,7 +219,7 @@ app.get('/api/test-s3', async (req, res) => {
 });
 
 // ============================================
-// ===== МАРШРУТЫ =====
+// ===== МАРШРУТЫ (все остальные) =====
 // ============================================
 
 // ----- АВТОРИЗАЦИЯ -----
