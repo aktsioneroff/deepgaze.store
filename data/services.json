@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "id": 1782603550315,
+    "name": "Название вашей услуги",
+    "description": "Описание услуги",
+    "price": 5000,
+    "priority": 0,
+    "photo": "https://s3.twcstorage.ru/b84d36c2-5e58-406e-9d3d-5754fe0dda39/services/1782603550315-655343756.png",
+    "createdAt": "2026-06-27T23:39:10.315Z"
+  }
+]
