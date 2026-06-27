@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "id": 1782603575421,
+    "serviceId": 1782603550315,
+    "photo": "https://s3.twcstorage.ru/b84d36c2-5e58-406e-9d3d-5754fe0dda39/portfolio/1782603575421-669493216.png",
+    "description": "Описание работы",
+    "createdAt": "2026-06-27T23:39:35.421Z",
+    "createdBy": "Администратор"
+  }
+]
