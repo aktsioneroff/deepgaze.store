@@ -1,0 +1,18 @@
+{
+  "name": "deep-gaze-studio",
+  "version": "2.0.0",
+  "description": "Премиум фотостудия радужки глаза",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "bcryptjs": "^2.4.3",
+    "multer": "^1.4.5-lts.1"
+  }
+}
