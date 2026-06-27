@@ -9,23 +9,46 @@ const AWS = require('aws-sdk');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ===== НАСТРОЙКА S3 =====
-const s3 = new AWS.S3({
-    endpoint: process.env.S3_ENDPOINT || 'https://s3.timeweb.cloud',
-    accessKeyId: process.env.S3_ACCESS_KEY,
-    secretAccessKey: process.env.S3_SECRET_KEY,
-    region: process.env.S3_REGION || 'ru-1',
-    s3ForcePathStyle: true, // Важно для Timeweb S3
-    signatureVersion: 'v4'
-});
-
-const BUCKET_NAME = process.env.S3_BUCKET || 'deep-gaze-uploads';
-
 // ===== ЛОГИРОВАНИЕ =====
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
 });
+
+// ===== ПРОВЕРКА ПЕРЕМЕННЫХ S3 ПРИ ЗАПУСКЕ =====
+console.log('========================================');
+console.log('🔍 ПРОВЕРКА ПЕРЕМЕННЫХ S3:');
+console.log('📦 S3_BUCKET:', process.env.S3_BUCKET || '❌ не задан');
+console.log('🔑 S3_ACCESS_KEY:', process.env.S3_ACCESS_KEY ? '✅ установлен (' + process.env.S3_ACCESS_KEY.substring(0, 8) + '...)' : '❌ не найден');
+console.log('🔑 S3_SECRET_KEY:', process.env.S3_SECRET_KEY ? '✅ установлен (' + process.env.S3_SECRET_KEY.substring(0, 8) + '...)' : '❌ не найден');
+console.log('🌐 S3_ENDPOINT:', process.env.S3_ENDPOINT || '❌ не задан (используем default)');
+console.log('📍 S3_REGION:', process.env.S3_REGION || '❌ не задан (используем default)');
+console.log('========================================');
+
+// ===== НАСТРОЙКА S3 =====
+const s3Config = {
+    endpoint: process.env.S3_ENDPOINT || 'https://swift.twcstorage.ru',
+    accessKeyId: process.env.S3_ACCESS_KEY,
+    secretAccessKey: process.env.S3_SECRET_KEY,
+    region: process.env.S3_REGION || 'ru-1',
+    s3ForcePathStyle: true,
+    signatureVersion: 'v4',
+    httpOptions: {
+        timeout: 30000,
+        connectTimeout: 30000
+    }
+};
+
+// Проверяем, есть ли ключи
+if (!s3Config.accessKeyId || !s3Config.secretAccessKey) {
+    console.error('❌ ВНИМАНИЕ: S3 ключи не найдены! Загрузка фото НЕ БУДЕТ РАБОТАТЬ!');
+    console.error('   Добавьте переменные S3_ACCESS_KEY и S3_SECRET_KEY в настройках приложения');
+} else {
+    console.log('✅ S3 ключи найдены, подключаемся...');
+}
+
+const s3 = new AWS.S3(s3Config);
+const BUCKET_NAME = process.env.S3_BUCKET || 'b84d36c2-5e58-406e-9d3d-5754fe0dda39';
 
 // ===== ПУТИ К ДАННЫМ =====
 const DATA_DIR = path.join(__dirname, 'data');
@@ -44,7 +67,7 @@ const storage = multer.memoryStorage();
 
 const upload = multer({ 
     storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 } // 10 MB
+    limits: { fileSize: 10 * 1024 * 1024 }
 });
 
 // ===== MIDDLEWARE =====
@@ -75,7 +98,7 @@ function initDataFiles() {
                 fs.writeFileSync(filePath, defaultContent);
                 console.log(`✅ Создан файл: ${filePath}`);
             } catch (e) {
-                console.error(`❌ Ошибка:`, e);
+                console.error(`❌ Ошибка создания ${filePath}:`, e);
             }
         }
     }
@@ -96,35 +119,11 @@ function initDataFiles() {
             console.log('✅ Администратор создан');
         }
     } catch (e) {
-        console.error('❌ Ошибка:', e);
+        console.error('❌ Ошибка инициализации:', e);
     }
 }
 
 initDataFiles();
-
-// ===== ФУНКЦИЯ ЗАГРУЗКИ В S3 =====
-async function uploadToS3(file, folder = '') {
-    const key = `${folder}${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
-    
-    const params = {
-        Bucket: BUCKET_NAME,
-        Key: key,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-        ACL: 'public-read'
-    };
-    
-    try {
-        const result = await s3.upload(params).promise();
-        // Возвращаем публичный URL
-        const url = result.Location;
-        console.log(`✅ Загружено в S3: ${url}`);
-        return url;
-    } catch (error) {
-        console.error('❌ Ошибка загрузки в S3:', error);
-        throw error;
-    }
-}
 
 // ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====
 function readJSONFile(filePath) {
@@ -153,6 +152,71 @@ function isAdmin(req, res, next) {
     if (req.session.user && req.session.user.role === 'admin') return next();
     res.status(403).json({ error: 'Доступ запрещен' });
 }
+
+// ===== ФУНКЦИЯ ЗАГРУЗКИ В S3 =====
+async function uploadToS3(file, folder = '') {
+    const key = `${folder}${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
+    
+    const params = {
+        Bucket: BUCKET_NAME,
+        Key: key,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+        ACL: 'public-read'
+    };
+    
+    try {
+        console.log(`📤 Загрузка в S3: ${key}`);
+        const result = await s3.upload(params).promise();
+        console.log(`✅ Загружено в S3: ${result.Location}`);
+        return result.Location;
+    } catch (error) {
+        console.error('❌ Ошибка загрузки в S3:', error);
+        throw error;
+    }
+}
+
+// ===== ТЕСТОВЫЙ МАРШРУТ ДЛЯ ПРОВЕРКИ S3 =====
+app.get('/api/test-s3', async (req, res) => {
+    try {
+        const config = {
+            endpoint: process.env.S3_ENDPOINT || 'не задан',
+            bucket: process.env.S3_BUCKET || 'не задан',
+            region: process.env.S3_REGION || 'не задан',
+            hasAccessKey: !!process.env.S3_ACCESS_KEY,
+            hasSecretKey: !!process.env.S3_SECRET_KEY,
+            accessKeyStart: process.env.S3_ACCESS_KEY ? process.env.S3_ACCESS_KEY.substring(0, 8) + '...' : 'нет'
+        };
+        
+        // Пробуем получить список файлов в бакете
+        let listResult = null;
+        if (config.hasAccessKey && config.hasSecretKey) {
+            try {
+                const listParams = { Bucket: BUCKET_NAME, MaxKeys: 5 };
+                listResult = await s3.listObjectsV2(listParams).promise();
+                listResult = {
+                    success: true,
+                    count: listResult.Contents?.length || 0
+                };
+            } catch (e) {
+                listResult = { error: e.message };
+            }
+        }
+        
+        res.json({
+            success: true,
+            config: config,
+            listResult: listResult,
+            message: 'Проверьте, что все переменные заданы в Timeweb'
+        });
+    } catch (error) {
+        console.error('S3 test error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
 
 // ============================================
 // ===== МАРШРУТЫ =====
