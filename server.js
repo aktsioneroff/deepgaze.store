@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 const S3_CONFIG = {
     accessKeyId: 'WH5JV70A76ML0WY9VWJM',
     secretAccessKey: 'EtN37sHNRkLs5dPgJzkB2TQFUW8mSE81gDIFe8DP',
-    endpoint: 'https://swift.twcstorage.ru',
+    endpoint: 'https://s3.twcstorage.ru',
     region: 'ru-1',
     bucket: 'b84d36c2-5e58-406e-9d3d-5754fe0dda39'
 };
