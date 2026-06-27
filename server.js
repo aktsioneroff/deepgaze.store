@@ -4,9 +4,22 @@ const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const AWS = require('aws-sdk');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ===== НАСТРОЙКА S3 =====
+const s3 = new AWS.S3({
+    endpoint: process.env.S3_ENDPOINT || 'https://s3.timeweb.cloud',
+    accessKeyId: process.env.S3_ACCESS_KEY,
+    secretAccessKey: process.env.S3_SECRET_KEY,
+    region: process.env.S3_REGION || 'ru-1',
+    s3ForcePathStyle: true, // Важно для Timeweb S3
+    signatureVersion: 'v4'
+});
+
+const BUCKET_NAME = process.env.S3_BUCKET || 'deep-gaze-uploads';
 
 // ===== ЛОГИРОВАНИЕ =====
 app.use((req, res, next) => {
@@ -14,51 +27,30 @@ app.use((req, res, next) => {
     next();
 });
 
-// ===== СОЗДАЕМ ДИРЕКТОРИИ =====
-const dirs = ['data'];
-dirs.forEach(dir => {
-    const fullPath = path.join(__dirname, dir);
-    if (!fs.existsSync(fullPath)) {
-        try {
-            fs.mkdirSync(fullPath, { recursive: true, mode: 0o777 });
-            console.log(`Created: ${fullPath}`);
-        } catch (e) {
-            console.warn(`Cannot create ${fullPath}: ${e.message}`);
-        }
-    }
-});
+// ===== ПУТИ К ДАННЫМ =====
+const DATA_DIR = path.join(__dirname, 'data');
+const REQUESTS_FILE = path.join(DATA_DIR, 'requests.json');
+const SERVICES_FILE = path.join(DATA_DIR, 'services.json');
+const PORTFOLIO_FILE = path.join(DATA_DIR, 'portfolio.json');
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
-// ===== MULTER (используем /tmp) =====
-const uploadDir = '/tmp/uploads';
-if (!fs.existsSync(uploadDir)) {
-    try {
-        fs.mkdirSync(uploadDir, { recursive: true, mode: 0o777 });
-        console.log(`Created: ${uploadDir}`);
-    } catch (e) {
-        console.warn(`Cannot create ${uploadDir}: ${e.message}`);
-    }
+// ===== СОЗДАЕМ ПАПКУ DATA =====
+if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
-    }
-});
+// ===== MULTER (используем memory storage для S3) =====
+const storage = multer.memoryStorage();
 
 const upload = multer({ 
     storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 }
+    limits: { fileSize: 10 * 1024 * 1024 } // 10 MB
 });
 
 // ===== MIDDLEWARE =====
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
-// ===== ВАЖНО: раздаем файлы из /tmp/uploads =====
-app.use('/uploads', express.static('/tmp/uploads'));
 
 // ===== СЕССИИ =====
 app.use(session({
@@ -68,14 +60,7 @@ app.use(session({
     cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
 }));
 
-// ===== ПУТИ К ФАЙЛАМ =====
-const DATA_DIR = path.join(__dirname, 'data');
-const REQUESTS_FILE = path.join(DATA_DIR, 'requests.json');
-const SERVICES_FILE = path.join(DATA_DIR, 'services.json');
-const PORTFOLIO_FILE = path.join(DATA_DIR, 'portfolio.json');
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-
-// ===== ИНИЦИАЛИЗАЦИЯ =====
+// ===== ИНИЦИАЛИЗАЦИЯ ДАННЫХ =====
 function initDataFiles() {
     const files = {
         [REQUESTS_FILE]: '[]',
@@ -88,9 +73,9 @@ function initDataFiles() {
         if (!fs.existsSync(filePath)) {
             try {
                 fs.writeFileSync(filePath, defaultContent);
-                console.log(`Created: ${filePath}`);
+                console.log(`✅ Создан файл: ${filePath}`);
             } catch (e) {
-                console.error(`Error:`, e);
+                console.error(`❌ Ошибка:`, e);
             }
         }
     }
@@ -108,20 +93,45 @@ function initDataFiles() {
                 createdAt: new Date().toISOString()
             });
             fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-            console.log('Admin created');
+            console.log('✅ Администратор создан');
         }
     } catch (e) {
-        console.error('Init error:', e);
+        console.error('❌ Ошибка:', e);
     }
 }
 
 initDataFiles();
 
+// ===== ФУНКЦИЯ ЗАГРУЗКИ В S3 =====
+async function uploadToS3(file, folder = '') {
+    const key = `${folder}${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
+    
+    const params = {
+        Bucket: BUCKET_NAME,
+        Key: key,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+        ACL: 'public-read'
+    };
+    
+    try {
+        const result = await s3.upload(params).promise();
+        // Возвращаем публичный URL
+        const url = result.Location;
+        console.log(`✅ Загружено в S3: ${url}`);
+        return url;
+    } catch (error) {
+        console.error('❌ Ошибка загрузки в S3:', error);
+        throw error;
+    }
+}
+
+// ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====
 function readJSONFile(filePath) {
     try {
         return JSON.parse(fs.readFileSync(filePath, 'utf8'));
     } catch (e) {
-        console.error(`Error reading ${filePath}:`, e);
+        console.error(`❌ Ошибка чтения ${filePath}:`, e);
         return [];
     }
 }
@@ -130,7 +140,7 @@ function writeJSONFile(filePath, data) {
     try {
         fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
     } catch (e) {
-        console.error(`Error writing ${filePath}:`, e);
+        console.error(`❌ Ошибка записи ${filePath}:`, e);
     }
 }
 
@@ -145,12 +155,12 @@ function isAdmin(req, res, next) {
 }
 
 // ============================================
-// ===== АВТОРИЗАЦИЯ =====
+// ===== МАРШРУТЫ =====
 // ============================================
 
+// ----- АВТОРИЗАЦИЯ -----
 app.post('/api/login', (req, res) => {
     console.log('[LOGIN] Request received');
-    console.log('[LOGIN] Body:', req.body);
     
     try {
         const { username, password } = req.body;
@@ -192,10 +202,7 @@ app.get('/api/check-auth', (req, res) => {
     res.json({ authenticated: !!req.session.user, user: req.session.user || null });
 });
 
-// ============================================
-// ===== ЗАЯВКИ =====
-// ============================================
-
+// ----- ЗАЯВКИ -----
 app.get('/api/requests', isAuthenticated, (req, res) => {
     res.json(readJSONFile(REQUESTS_FILE));
 });
@@ -251,10 +258,7 @@ app.delete('/api/requests/:id', isAuthenticated, (req, res) => {
     }
 });
 
-// ============================================
-// ===== УСЛУГИ =====
-// ============================================
-
+// ----- УСЛУГИ (С S3) -----
 app.get('/api/services', (req, res) => {
     try {
         const services = readJSONFile(SERVICES_FILE);
@@ -267,18 +271,25 @@ app.get('/api/services', (req, res) => {
     }
 });
 
-app.post('/api/services', isAuthenticated, upload.single('photo'), (req, res) => {
+app.post('/api/services', isAuthenticated, upload.single('photo'), async (req, res) => {
     try {
         const services = readJSONFile(SERVICES_FILE);
+        
+        let photoUrl = null;
+        if (req.file) {
+            photoUrl = await uploadToS3(req.file, 'services/');
+        }
+        
         const newService = {
             id: Date.now(),
             name: req.body.name || 'Без названия',
             description: req.body.description || '',
             price: parseFloat(req.body.price) || 0,
             priority: parseInt(req.body.priority) || 0,
-            photo: req.file ? `/uploads/${req.file.filename}` : null,
+            photo: photoUrl,
             createdAt: new Date().toISOString()
         };
+        
         services.push(newService);
         writeJSONFile(SERVICES_FILE, services);
         res.status(201).json(newService);
@@ -288,19 +299,26 @@ app.post('/api/services', isAuthenticated, upload.single('photo'), (req, res) =>
     }
 });
 
-app.put('/api/services/:id', isAuthenticated, upload.single('photo'), (req, res) => {
+app.put('/api/services/:id', isAuthenticated, upload.single('photo'), async (req, res) => {
     try {
         const services = readJSONFile(SERVICES_FILE);
         const index = services.findIndex(s => s.id === parseInt(req.params.id));
         if (index === -1) return res.status(404).json({ error: 'Не найдено' });
+        
+        let photoUrl = services[index].photo;
+        if (req.file) {
+            photoUrl = await uploadToS3(req.file, 'services/');
+        }
+        
         services[index] = {
             ...services[index],
             name: req.body.name || services[index].name,
             description: req.body.description || services[index].description,
             price: parseFloat(req.body.price) || services[index].price,
             priority: parseInt(req.body.priority) || 0,
-            photo: req.file ? `/uploads/${req.file.filename}` : services[index].photo
+            photo: photoUrl
         };
+        
         writeJSONFile(SERVICES_FILE, services);
         res.json(services[index]);
     } catch (e) {
@@ -316,10 +334,7 @@ app.delete('/api/services/:id', isAuthenticated, (req, res) => {
     res.json({ success: true });
 });
 
-// ============================================
-// ===== ПОРТФОЛИО =====
-// ============================================
-
+// ----- ПОРТФОЛИО (С S3) -----
 app.get('/api/portfolio', (req, res) => {
     try {
         const portfolio = readJSONFile(PORTFOLIO_FILE);
@@ -334,18 +349,22 @@ app.get('/api/portfolio', (req, res) => {
     }
 });
 
-app.post('/api/portfolio', isAuthenticated, upload.single('photo'), (req, res) => {
+app.post('/api/portfolio', isAuthenticated, upload.single('photo'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'Нужно изображение' });
+        
         const portfolio = readJSONFile(PORTFOLIO_FILE);
+        const photoUrl = await uploadToS3(req.file, 'portfolio/');
+        
         const newItem = {
             id: Date.now(),
             serviceId: parseInt(req.body.serviceId),
-            photo: `/uploads/${req.file.filename}`,
+            photo: photoUrl,
             description: req.body.description || '',
             createdAt: new Date().toISOString(),
             createdBy: req.session.user.fullName
         };
+        
         portfolio.push(newItem);
         writeJSONFile(PORTFOLIO_FILE, portfolio);
         res.status(201).json(newItem);
@@ -362,10 +381,7 @@ app.delete('/api/portfolio/:id', isAuthenticated, (req, res) => {
     res.json({ success: true });
 });
 
-// ============================================
-// ===== СОТРУДНИКИ =====
-// ============================================
-
+// ----- СОТРУДНИКИ -----
 app.get('/api/users', isAdmin, (req, res) => {
     const users = readJSONFile(USERS_FILE);
     res.json(users.map(({ password, ...u }) => u));
@@ -428,10 +444,7 @@ app.delete('/api/users/:id', isAdmin, (req, res) => {
     res.json({ success: true });
 });
 
-// ============================================
-// ===== СТАТИКА =====
-// ============================================
-
+// ----- СТАТИКА -----
 app.get('/admin/login.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin', 'login.html'));
 });
@@ -447,8 +460,9 @@ app.get('*', (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`========================================`);
-    console.log(`Deep Gaze Studio запущена на порту ${PORT}`);
-    console.log(`URL: http://localhost:${PORT}`);
-    console.log(`Admin: http://localhost:${PORT}/admin/login.html`);
+    console.log(`🚀 Deep Gaze Studio запущена на порту ${PORT}`);
+    console.log(`📦 S3 Bucket: ${BUCKET_NAME}`);
+    console.log(`🔗 URL: http://localhost:${PORT}`);
+    console.log(`🔐 Admin: http://localhost:${PORT}/admin/login.html`);
     console.log(`========================================`);
 });
