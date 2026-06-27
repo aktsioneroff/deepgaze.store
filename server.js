@@ -8,44 +8,40 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ===== ЛОГИРОВАНИЕ ВСЕХ ЗАПРОСОВ =====
+// ===== ЛОГИРОВАНИЕ =====
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
 });
 
-// ===== СОЗДАЕМ ДИРЕКТОРИИ =====
+// ===== СОЗДАЕМ ДИРЕКТОРИИ (с обработкой ошибок) =====
 const dirs = ['data', 'uploads'];
 dirs.forEach(dir => {
     const fullPath = path.join(__dirname, dir);
     if (!fs.existsSync(fullPath)) {
         try {
-            fs.mkdirSync(fullPath, { recursive: true });
+            fs.mkdirSync(fullPath, { recursive: true, mode: 0o777 });
             console.log(`Created directory: ${fullPath}`);
         } catch (e) {
-            console.error(`Error creating ${fullPath}:`, e);
+            console.warn(`Cannot create ${fullPath}: ${e.message}`);
+            // Продолжаем работу
         }
     }
 });
 
-// ===== MIDDLEWARE =====
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// ===== MULTER С ИСПОЛЬЗОВАНИЕМ /tmp =====
+const uploadDir = '/tmp/uploads';
+if (!fs.existsSync(uploadDir)) {
+    try {
+        fs.mkdirSync(uploadDir, { recursive: true, mode: 0o777 });
+        console.log(`Created temp uploads: ${uploadDir}`);
+    } catch (e) {
+        console.warn(`Cannot create temp uploads: ${e.message}`);
+    }
+}
 
-app.use(session({
-    secret: 'deep-gaze-secret-key-2026',
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
-}));
-
-// ===== MULTER CONFIG =====
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const uploadDir = path.join(__dirname, 'uploads');
-        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
         cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
@@ -57,6 +53,19 @@ const upload = multer({
     storage: storage,
     limits: { fileSize: 10 * 1024 * 1024 }
 });
+
+// ===== MIDDLEWARE =====
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ===== СЕССИИ =====
+app.use(session({
+    secret: 'deep-gaze-secret-key-2026',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
+}));
 
 // ===== ПУТИ К ФАЙЛАМ =====
 const DATA_DIR = path.join(__dirname, 'data');
@@ -85,7 +94,6 @@ function initDataFiles() {
         }
     }
     
-    // Создаем админа
     try {
         const users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
         if (users.length === 0) {
@@ -108,7 +116,6 @@ function initDataFiles() {
 
 initDataFiles();
 
-// ===== HELPERS =====
 function readJSONFile(filePath) {
     try {
         return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -126,7 +133,6 @@ function writeJSONFile(filePath, data) {
     }
 }
 
-// ===== AUTH MIDDLEWARE =====
 function isAuthenticated(req, res, next) {
     if (req.session.user) return next();
     res.status(401).json({ error: 'Необходима авторизация' });
@@ -138,34 +144,24 @@ function isAdmin(req, res, next) {
 }
 
 // ============================================
-// ===== AUTH ROUTES =====
+// ===== АВТОРИЗАЦИЯ =====
 // ============================================
 
 app.post('/api/login', (req, res) => {
-    console.log('[LOGIN] Request received, body:', req.body);
+    console.log('[LOGIN] Request received');
+    console.log('[LOGIN] Body:', req.body);
     
     try {
         const { username, password } = req.body;
         
         if (!username || !password) {
-            console.log('[LOGIN] Missing username or password');
             return res.status(400).json({ error: 'Введите логин и пароль' });
         }
         
         const users = readJSONFile(USERS_FILE);
-        console.log('[LOGIN] Users found:', users.length);
-        
         const user = users.find(u => u.username === username);
         
-        if (!user) {
-            console.log('[LOGIN] User not found:', username);
-            return res.status(401).json({ error: 'Неверный логин или пароль' });
-        }
-        
-        const passwordMatch = bcrypt.compareSync(password, user.password);
-        console.log('[LOGIN] Password match:', passwordMatch);
-        
-        if (!passwordMatch) {
+        if (!user || !bcrypt.compareSync(password, user.password)) {
             return res.status(401).json({ error: 'Неверный логин или пароль' });
         }
         
@@ -176,9 +172,8 @@ app.post('/api/login', (req, res) => {
             role: user.role
         };
         
-        console.log('[LOGIN] Success for:', username);
+        console.log('[LOGIN] Success:', username);
         res.json({ success: true, user: req.session.user });
-        
     } catch (e) {
         console.error('[LOGIN] Error:', e);
         res.status(500).json({ error: 'Ошибка сервера' });
@@ -193,14 +188,11 @@ app.post('/api/logout', (req, res) => {
 });
 
 app.get('/api/check-auth', (req, res) => {
-    res.json({ 
-        authenticated: !!req.session.user, 
-        user: req.session.user || null 
-    });
+    res.json({ authenticated: !!req.session.user, user: req.session.user || null });
 });
 
 // ============================================
-// ===== REQUESTS CRUD =====
+// ===== ЗАЯВКИ =====
 // ============================================
 
 app.get('/api/requests', isAuthenticated, (req, res) => {
@@ -208,7 +200,7 @@ app.get('/api/requests', isAuthenticated, (req, res) => {
 });
 
 app.post('/api/requests', (req, res) => {
-    console.log('[REQUEST] New request, body:', req.body);
+    console.log('[REQUEST] New:', req.body);
     
     try {
         const requests = readJSONFile(REQUESTS_FILE);
@@ -225,10 +217,8 @@ app.post('/api/requests', (req, res) => {
             updatedAt: new Date().toISOString(),
             createdBy: req.session.user ? req.session.user.fullName : 'Клиент с сайта'
         };
-        
         requests.push(newRequest);
         writeJSONFile(REQUESTS_FILE, requests);
-        console.log('[REQUEST] Created:', newRequest.id);
         res.status(201).json(newRequest);
     } catch (e) {
         console.error('[REQUEST] Error:', e);
@@ -240,15 +230,12 @@ app.put('/api/requests/:id', isAuthenticated, (req, res) => {
     try {
         const requests = readJSONFile(REQUESTS_FILE);
         const index = requests.findIndex(r => r.id === parseInt(req.params.id));
-        
-        if (index === -1) return res.status(404).json({ error: 'Заявка не найдена' });
-        
+        if (index === -1) return res.status(404).json({ error: 'Не найдено' });
         requests[index] = { ...requests[index], ...req.body, id: requests[index].id, updatedAt: new Date().toISOString() };
         writeJSONFile(REQUESTS_FILE, requests);
         res.json(requests[index]);
     } catch (e) {
-        console.error('[REQUEST] Update error:', e);
-        res.status(500).json({ error: 'Ошибка обновления' });
+        res.status(500).json({ error: 'Ошибка' });
     }
 });
 
@@ -259,13 +246,12 @@ app.delete('/api/requests/:id', isAuthenticated, (req, res) => {
         writeJSONFile(REQUESTS_FILE, requests);
         res.json({ success: true });
     } catch (e) {
-        console.error('[REQUEST] Delete error:', e);
-        res.status(500).json({ error: 'Ошибка удаления' });
+        res.status(500).json({ error: 'Ошибка' });
     }
 });
 
 // ============================================
-// ===== SERVICES CRUD =====
+// ===== УСЛУГИ =====
 // ============================================
 
 app.get('/api/services', (req, res) => {
@@ -276,8 +262,7 @@ app.get('/api/services', (req, res) => {
         }
         res.json(services);
     } catch (e) {
-        console.error('[SERVICES] Get error:', e);
-        res.status(500).json({ error: 'Ошибка получения услуг' });
+        res.status(500).json({ error: 'Ошибка' });
     }
 });
 
@@ -293,13 +278,11 @@ app.post('/api/services', isAuthenticated, upload.single('photo'), (req, res) =>
             photo: req.file ? `/uploads/${req.file.filename}` : null,
             createdAt: new Date().toISOString()
         };
-        
         services.push(newService);
         writeJSONFile(SERVICES_FILE, services);
         res.status(201).json(newService);
     } catch (e) {
-        console.error('[SERVICES] Create error:', e);
-        res.status(500).json({ error: 'Ошибка создания услуги' });
+        res.status(500).json({ error: 'Ошибка' });
     }
 });
 
@@ -308,7 +291,6 @@ app.put('/api/services/:id', isAuthenticated, upload.single('photo'), (req, res)
         const services = readJSONFile(SERVICES_FILE);
         const index = services.findIndex(s => s.id === parseInt(req.params.id));
         if (index === -1) return res.status(404).json({ error: 'Не найдено' });
-        
         services[index] = {
             ...services[index],
             name: req.body.name || services[index].name,
@@ -317,12 +299,10 @@ app.put('/api/services/:id', isAuthenticated, upload.single('photo'), (req, res)
             priority: parseInt(req.body.priority) || 0,
             photo: req.file ? `/uploads/${req.file.filename}` : services[index].photo
         };
-        
         writeJSONFile(SERVICES_FILE, services);
         res.json(services[index]);
     } catch (e) {
-        console.error('[SERVICES] Update error:', e);
-        res.status(500).json({ error: 'Ошибка обновления' });
+        res.status(500).json({ error: 'Ошибка' });
     }
 });
 
@@ -334,22 +314,19 @@ app.delete('/api/services/:id', isAuthenticated, (req, res) => {
 });
 
 // ============================================
-// ===== PORTFOLIO CRUD =====
+// ===== ПОРТФОЛИО =====
 // ============================================
 
 app.get('/api/portfolio', (req, res) => {
     try {
         const portfolio = readJSONFile(PORTFOLIO_FILE);
         const services = readJSONFile(SERVICES_FILE);
-        
         const enriched = portfolio.map(item => ({
             ...item,
             serviceName: services.find(s => s.id === parseInt(item.serviceId))?.name || 'Без категории'
         }));
-        
         res.json(enriched);
     } catch (e) {
-        console.error('[PORTFOLIO] Get error:', e);
         res.status(500).json({ error: 'Ошибка' });
     }
 });
@@ -357,7 +334,6 @@ app.get('/api/portfolio', (req, res) => {
 app.post('/api/portfolio', isAuthenticated, upload.single('photo'), (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'Нужно изображение' });
-        
         const portfolio = readJSONFile(PORTFOLIO_FILE);
         const newItem = {
             id: Date.now(),
@@ -367,12 +343,10 @@ app.post('/api/portfolio', isAuthenticated, upload.single('photo'), (req, res) =
             createdAt: new Date().toISOString(),
             createdBy: req.session.user.fullName
         };
-        
         portfolio.push(newItem);
         writeJSONFile(PORTFOLIO_FILE, portfolio);
         res.status(201).json(newItem);
     } catch (e) {
-        console.error('[PORTFOLIO] Create error:', e);
         res.status(500).json({ error: 'Ошибка' });
     }
 });
@@ -385,7 +359,7 @@ app.delete('/api/portfolio/:id', isAuthenticated, (req, res) => {
 });
 
 // ============================================
-// ===== USERS CRUD =====
+// ===== СОТРУДНИКИ =====
 // ============================================
 
 app.get('/api/users', isAdmin, (req, res) => {
@@ -399,7 +373,6 @@ app.post('/api/users', isAdmin, (req, res) => {
         if (users.find(u => u.username === req.body.username)) {
             return res.status(400).json({ error: 'Пользователь уже существует' });
         }
-        
         const newUser = {
             id: Date.now(),
             username: req.body.username,
@@ -408,14 +381,11 @@ app.post('/api/users', isAdmin, (req, res) => {
             role: req.body.role || 'photographer',
             createdAt: new Date().toISOString()
         };
-        
         users.push(newUser);
         writeJSONFile(USERS_FILE, users);
-        
         const { password, ...safeUser } = newUser;
         res.status(201).json(safeUser);
     } catch (e) {
-        console.error('[USERS] Create error:', e);
         res.status(500).json({ error: 'Ошибка' });
     }
 });
@@ -425,23 +395,19 @@ app.put('/api/users/:id', isAdmin, (req, res) => {
         const users = readJSONFile(USERS_FILE);
         const index = users.findIndex(u => u.id === parseInt(req.params.id));
         if (index === -1) return res.status(404).json({ error: 'Не найден' });
-        
         users[index] = {
             ...users[index],
             fullName: req.body.fullName || users[index].fullName,
             username: req.body.username || users[index].username,
             role: req.body.role || users[index].role
         };
-        
         if (req.body.password) {
             users[index].password = bcrypt.hashSync(req.body.password, 10);
         }
-        
         writeJSONFile(USERS_FILE, users);
         const { password, ...safeUser } = users[index];
         res.json(safeUser);
     } catch (e) {
-        console.error('[USERS] Update error:', e);
         res.status(500).json({ error: 'Ошибка' });
     }
 });
@@ -457,7 +423,7 @@ app.delete('/api/users/:id', isAdmin, (req, res) => {
 });
 
 // ============================================
-// ===== STATIC PAGES =====
+// ===== СТАТИКА =====
 // ============================================
 
 app.get('/admin/login.html', (req, res) => {
@@ -472,10 +438,6 @@ app.get('*', (req, res) => {
     if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found' });
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
-// ============================================
-// ===== ЗАПУСК СЕРВЕРА =====
-// ============================================
 
 app.listen(PORT, () => {
     console.log(`========================================`);
