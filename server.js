@@ -27,17 +27,94 @@ let s3Connected = false;
 
 // ===== ФУНКЦИЯ ПРОВЕРКИ S3 =====
 async function testS3Connection() {
+    console.log('🔍 Проверка подключения к S3...');
     try {
         await s3Client.send(new HeadBucketCommand({ Bucket: BUCKET_NAME }));
         console.log('✅ S3 подключен успешно!');
         s3Connected = true;
         return true;
     } catch (error) {
-        console.error('❌ Ошибка подключения к S3:', error.message);
+        console.error('❌ Ошибка подключения к S3:');
+        console.error('  ├─ Name:', error.name);
+        console.error('  ├─ Code:', error.Code || 'Нет');
+        console.error('  └─ Message:', error.message);
         s3Connected = false;
         return false;
     }
 }
+
+// ===== ФУНКЦИИ ДЛЯ РАБОТЫ С S3 (ЭКСПОРТИРУЕМ) =====
+async function uploadToS3(key, data, contentType = 'application/json') {
+    if (!s3Connected) {
+        console.log(`⚠️ S3 не доступен, пропускаем загрузку: ${key}`);
+        return false;
+    }
+    try {
+        const params = {
+            Bucket: BUCKET_NAME,
+            Key: key,
+            Body: typeof data === 'string' ? data : JSON.stringify(data, null, 2),
+            ContentType: contentType
+        };
+        await s3Client.send(new PutObjectCommand(params));
+        console.log(`✅ Файл загружен в S3: ${key}`);
+        return true;
+    } catch (error) {
+        console.error(`❌ Ошибка загрузки в S3: ${error.message}`);
+        return false;
+    }
+}
+
+async function downloadFromS3(key) {
+    if (!s3Connected) {
+        console.log(`⚠️ S3 не доступен, пропускаем скачивание: ${key}`);
+        return null;
+    }
+    try {
+        const params = { Bucket: BUCKET_NAME, Key: key };
+        const result = await s3Client.send(new GetObjectCommand(params));
+        const body = await result.Body.transformToString();
+        console.log(`✅ Файл скачан из S3: ${key}`);
+        return body;
+    } catch (error) {
+        if (error.name === 'NoSuchKey') {
+            console.log(`⚠️ Файл не найден в S3: ${key}`);
+            return null;
+        }
+        console.error(`❌ Ошибка скачивания из S3: ${error.message}`);
+        return null;
+    }
+}
+
+async function deleteFromS3(key) {
+    if (!s3Connected) {
+        console.log(`⚠️ S3 не доступен, пропускаем удаление: ${key}`);
+        return false;
+    }
+    try {
+        await s3Client.send(new DeleteObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: key
+        }));
+        console.log(`🗑️ Файл удален из S3: ${key}`);
+        return true;
+    } catch (error) {
+        console.error(`❌ Ошибка удаления из S3: ${error.message}`);
+        return false;
+    }
+}
+
+// ===== ЭКСПОРТ ФУНКЦИЙ ДЛЯ ДРУГИХ МОДУЛЕЙ =====
+module.exports = {
+    s3Client,
+    s3Config,
+    BUCKET_NAME,
+    s3Connected,
+    testS3Connection,
+    uploadToS3,
+    downloadFromS3,
+    deleteFromS3
+};
 
 // ===== СОЗДАНИЕ ПАПОК =====
 const SESSIONS_DIR = path.join(__dirname, 'sessions');
@@ -65,7 +142,7 @@ console.log(`  ├─ Access Key: ${s3Config.credentials.accessKeyId.substring(0
 console.log(`  └─ Region: ${s3Config.region}`);
 console.log('📦 ============================\n');
 
-// Проверяем подключение
+// Проверяем подключение при старте
 (async () => {
     await testS3Connection();
 })();
@@ -129,41 +206,6 @@ app.get('/api/s3-status', (req, res) => {
         endpoint: s3Config.endpoint
     });
 });
-
-// ===== ФУНКЦИИ ДЛЯ РАБОТЫ С S3 =====
-async function uploadToS3(key, data, contentType = 'application/json') {
-    try {
-        const params = {
-            Bucket: BUCKET_NAME,
-            Key: key,
-            Body: typeof data === 'string' ? data : JSON.stringify(data, null, 2),
-            ContentType: contentType
-        };
-        await s3Client.send(new PutObjectCommand(params));
-        console.log(`✅ Файл загружен в S3: ${key}`);
-        return true;
-    } catch (error) {
-        console.error(`❌ Ошибка загрузки в S3: ${error.message}`);
-        return false;
-    }
-}
-
-async function downloadFromS3(key) {
-    try {
-        const params = { Bucket: BUCKET_NAME, Key: key };
-        const result = await s3Client.send(new GetObjectCommand(params));
-        const body = await result.Body.transformToString();
-        console.log(`✅ Файл скачан из S3: ${key}`);
-        return body;
-    } catch (error) {
-        if (error.name === 'NoSuchKey') {
-            console.log(`⚠️ Файл не найден в S3: ${key}`);
-            return null;
-        }
-        console.error(`❌ Ошибка скачивания из S3: ${error.message}`);
-        return null;
-    }
-}
 
 // ===== 404 =====
 app.use((req, res) => {
