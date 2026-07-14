@@ -1,36 +1,24 @@
 const fs = require('fs');
 const path = require('path');
+const s3Data = require('../utils/s3Data');
 
-const BRANCHES_FILE = path.join(__dirname, '../data/branches.json');
-const EMPLOYEES_FILE = path.join(__dirname, '../data/employees.json');
-const PARTNERS_FILE = path.join(__dirname, '../data/partners.json');
-const PORTFOLIO_FILE = path.join(__dirname, '../data/portfolio.json');
-const SERVICES_FILE = path.join(__dirname, '../data/services.json');
-const REQUESTS_FILE = path.join(__dirname, '../data/requests.json');
-const REFERRALS_FILE = path.join(__dirname, '../data/referrals.json');
-
-function readData(filePath) {
-    try {
-        if (fs.existsSync(filePath)) {
-            const data = fs.readFileSync(filePath, 'utf8');
-            return JSON.parse(data);
-        }
-        return [];
-    } catch (error) {
-        console.error('Ошибка чтения файла:', error);
-        return [];
-    }
+// ===== ФУНКЦИИ ДЛЯ РАБОТЫ С ДАННЫМИ (S3) =====
+async function readData(fileName) {
+    return await s3Data.readData(fileName);
 }
 
-function writeData(filePath, data) {
-    try {
-        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
-        return true;
-    } catch (error) {
-        console.error('Ошибка записи файла:', error);
-        return false;
-    }
+async function writeData(fileName, data) {
+    return await s3Data.writeData(fileName, data);
 }
+
+// ===== КОНСТАНТЫ =====
+const BRANCHES_FILE = 'branches.json';
+const EMPLOYEES_FILE = 'employees.json';
+const PARTNERS_FILE = 'partners.json';
+const PORTFOLIO_FILE = 'portfolio.json';
+const SERVICES_FILE = 'services.json';
+const REQUESTS_FILE = 'requests.json';
+const REFERRALS_FILE = 'referrals.json';
 
 function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
@@ -116,8 +104,8 @@ function getUserPermissions(user) {
 }
 
 // ===== ДАШБОРД =====
-exports.getDashboard = (req, res) => {
-    const requests = readData(REQUESTS_FILE);
+exports.getDashboard = async (req, res) => {
+    const requests = await readData(REQUESTS_FILE);
     const permissions = getUserPermissions(req.session.user);
     
     let userBranchId = null;
@@ -137,8 +125,8 @@ exports.getDashboard = (req, res) => {
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .slice(0, 10);
     
-    const services = readData(SERVICES_FILE);
-    const branches = readData(BRANCHES_FILE);
+    const services = await readData(SERVICES_FILE);
+    const branches = await readData(BRANCHES_FILE);
     
     const recentWithInfo = recentRequests.map(req => {
         const service = services.find(s => s.id === req.serviceId);
@@ -183,8 +171,8 @@ exports.getPlaceholder = (req, res) => {
 };
 
 // ===== РЕФЕРАЛЬНАЯ СИСТЕМА =====
-exports.getReferrals = (req, res) => {
-    const referrals = readData(REFERRALS_FILE);
+exports.getReferrals = async (req, res) => {
+    const referrals = await readData(REFERRALS_FILE);
     const permissions = getUserPermissions(req.session.user);
     
     res.render('pages/referrals/index', {
@@ -197,13 +185,13 @@ exports.getReferrals = (req, res) => {
     });
 };
 
-exports.getReferralForm = (req, res) => {
+exports.getReferralForm = async (req, res) => {
     const id = req.params.id;
     let referral = null;
     const permissions = getUserPermissions(req.session.user);
     
     if (id) {
-        const referrals = readData(REFERRALS_FILE);
+        const referrals = await readData(REFERRALS_FILE);
         referral = referrals.find(r => r.id === id);
     }
     
@@ -217,9 +205,9 @@ exports.getReferralForm = (req, res) => {
     });
 };
 
-exports.saveReferral = (req, res) => {
+exports.saveReferral = async (req, res) => {
     const { id, name, phone, bonus } = req.body;
-    const referrals = readData(REFERRALS_FILE);
+    const referrals = await readData(REFERRALS_FILE);
     
     if (id) {
         const index = referrals.findIndex(r => r.id === id);
@@ -241,21 +229,21 @@ exports.saveReferral = (req, res) => {
         });
     }
     
-    writeData(REFERRALS_FILE, referrals);
+    await writeData(REFERRALS_FILE, referrals);
     res.redirect('/portal/referrals');
 };
 
-exports.deleteReferral = (req, res) => {
+exports.deleteReferral = async (req, res) => {
     const id = req.params.id;
-    const referrals = readData(REFERRALS_FILE);
+    const referrals = await readData(REFERRALS_FILE);
     const filtered = referrals.filter(r => r.id !== id);
-    writeData(REFERRALS_FILE, filtered);
+    await writeData(REFERRALS_FILE, filtered);
     res.json({ success: true });
 };
 
-exports.searchReferral = (req, res) => {
+exports.searchReferral = async (req, res) => {
     const { phone } = req.query;
-    const referrals = readData(REFERRALS_FILE);
+    const referrals = await readData(REFERRALS_FILE);
     
     if (!phone) {
         return res.json([]);
@@ -268,9 +256,9 @@ exports.searchReferral = (req, res) => {
     res.json(results);
 };
 
-exports.addBonus = (req, res) => {
+exports.addBonus = async (req, res) => {
     const { id, orderAmount } = req.body;
-    const referrals = readData(REFERRALS_FILE);
+    const referrals = await readData(REFERRALS_FILE);
     const index = referrals.findIndex(r => r.id === id);
     
     if (index === -1) {
@@ -287,7 +275,7 @@ exports.addBonus = (req, res) => {
         date: new Date().toISOString()
     };
     
-    writeData(REFERRALS_FILE, referrals);
+    await writeData(REFERRALS_FILE, referrals);
     res.json({ 
         success: true, 
         newBonus: referrals[index].bonus,
@@ -295,9 +283,9 @@ exports.addBonus = (req, res) => {
     });
 };
 
-exports.subtractBonus = (req, res) => {
+exports.subtractBonus = async (req, res) => {
     const { id, orderAmount } = req.body;
-    const referrals = readData(REFERRALS_FILE);
+    const referrals = await readData(REFERRALS_FILE);
     const index = referrals.findIndex(r => r.id === id);
     
     if (index === -1) {
@@ -325,7 +313,7 @@ exports.subtractBonus = (req, res) => {
         date: new Date().toISOString()
     };
     
-    writeData(REFERRALS_FILE, referrals);
+    await writeData(REFERRALS_FILE, referrals);
     res.json({ 
         success: true, 
         newBonus: referrals[index].bonus,
@@ -334,11 +322,11 @@ exports.subtractBonus = (req, res) => {
 };
 
 // ===== ЗАЯВКИ =====
-exports.getRequests = (req, res) => {
-    const requests = readData(REQUESTS_FILE);
-    const employees = readData(EMPLOYEES_FILE);
-    const services = readData(SERVICES_FILE);
-    const branches = readData(BRANCHES_FILE);
+exports.getRequests = async (req, res) => {
+    const requests = await readData(REQUESTS_FILE);
+    const employees = await readData(EMPLOYEES_FILE);
+    const services = await readData(SERVICES_FILE);
+    const branches = await readData(BRANCHES_FILE);
     const permissions = getUserPermissions(req.session.user);
     
     const filterStatus = req.query.status || 'all';
@@ -391,12 +379,12 @@ exports.getRequests = (req, res) => {
     });
 };
 
-exports.getRequestForm = (req, res) => {
+exports.getRequestForm = async (req, res) => {
     const id = req.params.id;
     let request = null;
-    const services = readData(SERVICES_FILE);
-    const employees = readData(EMPLOYEES_FILE);
-    const branches = readData(BRANCHES_FILE);
+    const services = await readData(SERVICES_FILE);
+    const employees = await readData(EMPLOYEES_FILE);
+    const branches = await readData(BRANCHES_FILE);
     const permissions = getUserPermissions(req.session.user);
     
     let userBranchId = null;
@@ -408,7 +396,7 @@ exports.getRequestForm = (req, res) => {
     }
     
     if (id) {
-        const requests = readData(REQUESTS_FILE);
+        const requests = await readData(REQUESTS_FILE);
         request = requests.find(r => r.id === id);
     }
     
@@ -433,10 +421,10 @@ exports.getRequestForm = (req, res) => {
     });
 };
 
-exports.saveRequest = (req, res) => {
+exports.saveRequest = async (req, res) => {
     const { id, name, phone, date, time, serviceId, branchId, source, status } = req.body;
-    const requests = readData(REQUESTS_FILE);
-    const employees = readData(EMPLOYEES_FILE);
+    const requests = await readData(REQUESTS_FILE);
+    const employees = await readData(EMPLOYEES_FILE);
     
     let employeeBranchId = null;
     if (req.session.user.role !== 'admin') {
@@ -479,27 +467,27 @@ exports.saveRequest = (req, res) => {
         requests.push(newRequest);
     }
     
-    writeData(REQUESTS_FILE, requests);
+    await writeData(REQUESTS_FILE, requests);
     res.redirect('/requests');
 };
 
-exports.deleteRequest = (req, res) => {
+exports.deleteRequest = async (req, res) => {
     const id = req.params.id;
-    const requests = readData(REQUESTS_FILE);
+    const requests = await readData(REQUESTS_FILE);
     const filtered = requests.filter(r => r.id !== id);
-    writeData(REQUESTS_FILE, filtered);
+    await writeData(REQUESTS_FILE, filtered);
     res.json({ success: true });
 };
 
-exports.updateRequestStatus = (req, res) => {
+exports.updateRequestStatus = async (req, res) => {
     const id = req.params.id;
     const { status } = req.body;
-    const requests = readData(REQUESTS_FILE);
+    const requests = await readData(REQUESTS_FILE);
     const index = requests.findIndex(r => r.id === id);
     
     if (index !== -1) {
         requests[index].status = status;
-        writeData(REQUESTS_FILE, requests);
+        await writeData(REQUESTS_FILE, requests);
         res.json({ success: true });
     } else {
         res.status(404).json({ success: false, error: 'Заявка не найдена' });
@@ -507,8 +495,8 @@ exports.updateRequestStatus = (req, res) => {
 };
 
 // ===== ФИЛИАЛЫ =====
-exports.getBranches = (req, res) => {
-    const branches = readData(BRANCHES_FILE);
+exports.getBranches = async (req, res) => {
+    const branches = await readData(BRANCHES_FILE);
     const permissions = getUserPermissions(req.session.user);
     
     res.render('pages/branches/index', {
@@ -521,13 +509,13 @@ exports.getBranches = (req, res) => {
     });
 };
 
-exports.getBranchForm = (req, res) => {
+exports.getBranchForm = async (req, res) => {
     const id = req.params.id;
     let branch = null;
     const permissions = getUserPermissions(req.session.user);
     
     if (id) {
-        const branches = readData(BRANCHES_FILE);
+        const branches = await readData(BRANCHES_FILE);
         branch = branches.find(b => b.id === id);
     }
     
@@ -541,9 +529,9 @@ exports.getBranchForm = (req, res) => {
     });
 };
 
-exports.saveBranch = (req, res) => {
+exports.saveBranch = async (req, res) => {
     const { id, city, address, rent, rentDate } = req.body;
-    const branches = readData(BRANCHES_FILE);
+    const branches = await readData(BRANCHES_FILE);
     
     if (id) {
         const index = branches.findIndex(b => b.id === id);
@@ -561,22 +549,22 @@ exports.saveBranch = (req, res) => {
         });
     }
     
-    writeData(BRANCHES_FILE, branches);
+    await writeData(BRANCHES_FILE, branches);
     res.redirect('/branches');
 };
 
-exports.deleteBranch = (req, res) => {
+exports.deleteBranch = async (req, res) => {
     const id = req.params.id;
-    const branches = readData(BRANCHES_FILE);
+    const branches = await readData(BRANCHES_FILE);
     const filtered = branches.filter(b => b.id !== id);
-    writeData(BRANCHES_FILE, filtered);
+    await writeData(BRANCHES_FILE, filtered);
     res.json({ success: true });
 };
 
 // ===== СОТРУДНИКИ =====
-exports.getEmployees = (req, res) => {
-    const employees = readData(EMPLOYEES_FILE);
-    const branches = readData(BRANCHES_FILE);
+exports.getEmployees = async (req, res) => {
+    const employees = await readData(EMPLOYEES_FILE);
+    const branches = await readData(BRANCHES_FILE);
     const permissions = getUserPermissions(req.session.user);
     
     const employeesWithBranch = employees.map(emp => {
@@ -596,14 +584,14 @@ exports.getEmployees = (req, res) => {
     });
 };
 
-exports.getEmployeeForm = (req, res) => {
+exports.getEmployeeForm = async (req, res) => {
     const id = req.params.id;
     let employee = null;
-    const branches = readData(BRANCHES_FILE);
+    const branches = await readData(BRANCHES_FILE);
     const permissions = getUserPermissions(req.session.user);
     
     if (id) {
-        const employees = readData(EMPLOYEES_FILE);
+        const employees = await readData(EMPLOYEES_FILE);
         employee = employees.find(e => e.id === id);
     }
     
@@ -619,12 +607,11 @@ exports.getEmployeeForm = (req, res) => {
     });
 };
 
-exports.saveEmployee = (req, res) => {
+exports.saveEmployee = async (req, res) => {
     const { id, fullName, birthDate, position, branchId, phone, login, password } = req.body;
-    const employees = readData(EMPLOYEES_FILE);
+    const employees = await readData(EMPLOYEES_FILE);
     const isAdmin = req.session.user.role === 'admin';
     
-    // Проверка: генерального директора может создать только администратор
     if (position === 'Генеральный директор' && !isAdmin) {
         return res.status(403).send('Только администратор может назначить генерального директора');
     }
@@ -657,21 +644,21 @@ exports.saveEmployee = (req, res) => {
         });
     }
     
-    writeData(EMPLOYEES_FILE, employees);
+    await writeData(EMPLOYEES_FILE, employees);
     res.redirect('/employees');
 };
 
-exports.deleteEmployee = (req, res) => {
+exports.deleteEmployee = async (req, res) => {
     const id = req.params.id;
-    const employees = readData(EMPLOYEES_FILE);
+    const employees = await readData(EMPLOYEES_FILE);
     const filtered = employees.filter(e => e.id !== id);
-    writeData(EMPLOYEES_FILE, filtered);
+    await writeData(EMPLOYEES_FILE, filtered);
     res.json({ success: true });
 };
 
 // ===== ПАРТНЁРЫ =====
-exports.getPartners = (req, res) => {
-    const partners = readData(PARTNERS_FILE);
+exports.getPartners = async (req, res) => {
+    const partners = await readData(PARTNERS_FILE);
     const permissions = getUserPermissions(req.session.user);
     
     res.render('pages/partners/index', {
@@ -684,13 +671,13 @@ exports.getPartners = (req, res) => {
     });
 };
 
-exports.getPartnerForm = (req, res) => {
+exports.getPartnerForm = async (req, res) => {
     const id = req.params.id;
     let partner = null;
     const permissions = getUserPermissions(req.session.user);
     
     if (id) {
-        const partners = readData(PARTNERS_FILE);
+        const partners = await readData(PARTNERS_FILE);
         partner = partners.find(p => p.id === id);
     }
     
@@ -704,9 +691,9 @@ exports.getPartnerForm = (req, res) => {
     });
 };
 
-exports.savePartner = (req, res) => {
+exports.savePartner = async (req, res) => {
     const { id, name, logo } = req.body;
-    const partners = readData(PARTNERS_FILE);
+    const partners = await readData(PARTNERS_FILE);
     
     if (id) {
         const index = partners.findIndex(p => p.id === id);
@@ -722,21 +709,21 @@ exports.savePartner = (req, res) => {
         });
     }
     
-    writeData(PARTNERS_FILE, partners);
+    await writeData(PARTNERS_FILE, partners);
     res.redirect('/partners');
 };
 
-exports.deletePartner = (req, res) => {
+exports.deletePartner = async (req, res) => {
     const id = req.params.id;
-    const partners = readData(PARTNERS_FILE);
+    const partners = await readData(PARTNERS_FILE);
     const filtered = partners.filter(p => p.id !== id);
-    writeData(PARTNERS_FILE, filtered);
+    await writeData(PARTNERS_FILE, filtered);
     res.json({ success: true });
 };
 
 // ===== ПОРТФОЛИО =====
-exports.getPortfolio = (req, res) => {
-    const portfolio = readData(PORTFOLIO_FILE);
+exports.getPortfolio = async (req, res) => {
+    const portfolio = await readData(PORTFOLIO_FILE);
     const permissions = getUserPermissions(req.session.user);
     
     res.render('pages/portfolio/index', {
@@ -749,13 +736,13 @@ exports.getPortfolio = (req, res) => {
     });
 };
 
-exports.getPortfolioForm = (req, res) => {
+exports.getPortfolioForm = async (req, res) => {
     const id = req.params.id;
     let item = null;
     const permissions = getUserPermissions(req.session.user);
     
     if (id) {
-        const portfolio = readData(PORTFOLIO_FILE);
+        const portfolio = await readData(PORTFOLIO_FILE);
         item = portfolio.find(p => p.id === id);
     }
     
@@ -769,9 +756,9 @@ exports.getPortfolioForm = (req, res) => {
     });
 };
 
-exports.savePortfolio = (req, res) => {
+exports.savePortfolio = async (req, res) => {
     const { id, image } = req.body;
-    const portfolio = readData(PORTFOLIO_FILE);
+    const portfolio = await readData(PORTFOLIO_FILE);
     
     if (id) {
         const index = portfolio.findIndex(p => p.id === id);
@@ -786,21 +773,21 @@ exports.savePortfolio = (req, res) => {
         });
     }
     
-    writeData(PORTFOLIO_FILE, portfolio);
+    await writeData(PORTFOLIO_FILE, portfolio);
     res.redirect('/portfolio');
 };
 
-exports.deletePortfolio = (req, res) => {
+exports.deletePortfolio = async (req, res) => {
     const id = req.params.id;
-    const portfolio = readData(PORTFOLIO_FILE);
+    const portfolio = await readData(PORTFOLIO_FILE);
     const filtered = portfolio.filter(p => p.id !== id);
-    writeData(PORTFOLIO_FILE, filtered);
+    await writeData(PORTFOLIO_FILE, filtered);
     res.json({ success: true });
 };
 
 // ===== УСЛУГИ =====
-exports.getServices = (req, res) => {
-    const services = readData(SERVICES_FILE);
+exports.getServices = async (req, res) => {
+    const services = await readData(SERVICES_FILE);
     const permissions = getUserPermissions(req.session.user);
     
     res.render('pages/services/index', {
@@ -813,13 +800,13 @@ exports.getServices = (req, res) => {
     });
 };
 
-exports.getServiceForm = (req, res) => {
+exports.getServiceForm = async (req, res) => {
     const id = req.params.id;
     let service = null;
     const permissions = getUserPermissions(req.session.user);
     
     if (id) {
-        const services = readData(SERVICES_FILE);
+        const services = await readData(SERVICES_FILE);
         service = services.find(s => s.id === id);
     }
     
@@ -833,9 +820,9 @@ exports.getServiceForm = (req, res) => {
     });
 };
 
-exports.saveService = (req, res) => {
+exports.saveService = async (req, res) => {
     const { id, name, price, description, image } = req.body;
-    const services = readData(SERVICES_FILE);
+    const services = await readData(SERVICES_FILE);
     
     if (id) {
         const index = services.findIndex(s => s.id === id);
@@ -853,14 +840,14 @@ exports.saveService = (req, res) => {
         });
     }
     
-    writeData(SERVICES_FILE, services);
+    await writeData(SERVICES_FILE, services);
     res.redirect('/services');
 };
 
-exports.deleteService = (req, res) => {
+exports.deleteService = async (req, res) => {
     const id = req.params.id;
-    const services = readData(SERVICES_FILE);
+    const services = await readData(SERVICES_FILE);
     const filtered = services.filter(s => s.id !== id);
-    writeData(SERVICES_FILE, filtered);
+    await writeData(SERVICES_FILE, filtered);
     res.json({ success: true });
 };
