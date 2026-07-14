@@ -2,7 +2,24 @@ const express = require('express');
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
+
+// ===== СОЗДАНИЕ ПАПОК С ПРАВАМИ =====
+const SESSIONS_DIR = path.join(__dirname, 'sessions');
+const DATA_DIR = path.join(__dirname, 'data');
+
+// Создаем папки если их нет
+[sessionsDir, dataDir].forEach(dir => {
+    if (!fs.existsSync(dir)) {
+        try {
+            fs.mkdirSync(dir, { recursive: true, mode: 0o755 });
+            console.log(`📁 Создана папка: ${dir}`);
+        } catch (error) {
+            console.error(`❌ Ошибка создания папки ${dir}:`, error.message);
+        }
+    }
+});
 
 // ===== ПОДКЛЮЧЕНИЕ S3 =====
 let s3 = null;
@@ -20,14 +37,13 @@ try {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ===== ИНИЦИАЛИЗАЦИЯ S3 С ЛОГИРОВАНИЕМ =====
+// ===== ИНИЦИАЛИЗАЦИЯ S3 =====
 console.log('\n📦 ===== S3 ИНИЦИАЛИЗАЦИЯ =====');
 
 if (s3) {
     try {
         s3.logS3Connection();
         
-        // Проверяем подключение
         (async () => {
             console.log('🔍 Проверка подключения к S3...');
             const startTime = Date.now();
@@ -39,14 +55,11 @@ if (s3) {
                 if (s3Connected) {
                     console.log(`✅ S3 подключен успешно (${duration}ms)`);
                     
-                    // Проверяем наличие данных
                     if (s3Data) {
                         const files = await s3Data.listDataFiles();
                         console.log(`📁 Найдено файлов в S3: ${files.length}`);
                         if (files.length > 0) {
                             console.log(`  └─ Файлы: ${files.join(', ')}`);
-                        } else {
-                            console.log('  └─ Файлов нет, будут созданы при первом сохранении');
                         }
                     }
                 } else {
@@ -55,7 +68,6 @@ if (s3) {
                 }
             } catch (error) {
                 console.error(`❌ Ошибка при проверке S3: ${error.message}`);
-                console.log('  └─ Используем локальное хранилище');
                 s3Connected = false;
             }
         })();
@@ -81,9 +93,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ===== СЕССИИ =====
 app.use(session({
     store: new FileStore({
-        path: path.join(__dirname, 'sessions'),
+        path: SESSIONS_DIR,
         ttl: 7 * 24 * 60 * 60,
-        retries: 0
+        retries: 0,
+        reapInterval: 60 * 60 // чистить каждый час
     }),
     secret: process.env.SESSION_SECRET || 'super-secret-key-for-deep-gaze-2025',
     resave: false,
@@ -96,7 +109,7 @@ app.use(session({
     }
 }));
 
-// ===== ПОДРОБНОЕ ЛОГИРОВАНИЕ ЗАПРОСОВ =====
+// ===== ЛОГИРОВАНИЕ =====
 app.use((req, res, next) => {
     const startTime = Date.now();
     const sessionId = req.session ? req.session.id : 'НЕТ';
@@ -107,7 +120,6 @@ app.use((req, res, next) => {
     console.log(`  ├─ User: ${userId}`);
     console.log(`  └─ S3: ${s3Connected ? '✅ Подключен' : '❌ Локально'}`);
     
-    // Логируем завершение запроса
     res.on('finish', () => {
         const duration = Date.now() - startTime;
         console.log(`  └─ ⏱️ ${duration}ms → ${res.statusCode}`);
@@ -128,8 +140,6 @@ app.get('/api/s3-status', (req, res) => {
         bucket: s3 ? s3.BUCKET_NAME : null,
         endpoint: s3 ? s3.s3Config?.endpoint : null
     };
-    
-    console.log('📊 Запрос статуса S3:', status);
     res.json(status);
 });
 
