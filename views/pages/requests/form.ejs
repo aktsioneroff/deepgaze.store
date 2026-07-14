@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  
+  <link rel="icon" type="image/x-icon" href="/ico/favicon.ico">
+  <link rel="apple-touch-icon" href="/ico/apple-touch-icon.png">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/portal.css">
+  <link rel="stylesheet" href="/css/portal-modules.css">
+  
+  <style>
+    .module-form .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .module-form .form-row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+    }
+    .source-display {
+      padding: 0.7rem 1rem;
+      border-radius: 0.5rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+    .source-display .highlight {
+      color: var(--accent);
+      font-weight: 600;
+    }
+    @media (max-width: 600px) {
+      .module-form .form-row,
+      .module-form .form-row-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  
+  <div class="portal-wrapper">
+    <%- include('../../partials/sidebar', { activePage: '/requests', user: user }) %>
+    
+    <main class="portal-main">
+      <header class="portal-header">
+        <div class="portal-header-left">
+          <button class="mobile-sidebar-toggle" onclick="toggleSidebar()" title="Открыть меню">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+          <h1>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.5rem;">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            <%= isEdit ? 'Редактирование' : 'Добавление' %> заявки
+          </h1>
+        </div>
+        <div class="portal-header-right">
+          <span class="header-date"><%= new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) %></span>
+        </div>
+      </header>
+      
+      <div class="portal-content">
+        <div class="module-form">
+          <form action="/requests/save" method="POST">
+            <% if (isEdit) { %>
+              <input type="hidden" name="id" value="<%= request.id %>">
+            <% } %>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="name">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  Имя клиента
+                </label>
+                <input type="text" id="name" name="name" class="form-control" placeholder="Например: Иван Петров" value="<%= request ? request.name : '' %>" required>
+              </div>
+              
+              <div class="form-group">
+                <label for="phone">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                  </svg>
+                  Телефон
+                </label>
+                <input type="tel" id="phone" name="phone" class="form-control" placeholder="+7 (999) 123-45-67" value="<%= request ? request.phone : '' %>" required>
+              </div>
+            </div>
+            
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="date">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                  Дата записи
+                </label>
+                <input type="date" id="date" name="date" class="form-control" value="<%= request ? request.date : '' %>" required>
+              </div>
+              
+              <div class="form-group">
+                <label for="time">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  Время записи
+                </label>
+                <select id="time" name="time" class="form-control" required>
+                  <option value="10:00" <%= request && request.time === '10:00' ? 'selected' : '' %>>10:00</option>
+                  <option value="10:30" <%= request && request.time === '10:30' ? 'selected' : '' %>>10:30</option>
+                  <option value="11:00" <%= request && request.time === '11:00' ? 'selected' : '' %>>11:00</option>
+                  <option value="11:30" <%= request && request.time === '11:30' ? 'selected' : '' %>>11:30</option>
+                  <option value="12:00" <%= request && request.time === '12:00' ? 'selected' : '' %>>12:00</option>
+                  <option value="12:30" <%= request && request.time === '12:30' ? 'selected' : '' %>>12:30</option>
+                  <option value="13:00" <%= request && request.time === '13:00' ? 'selected' : '' %>>13:00</option>
+                  <option value="13:30" <%= request && request.time === '13:30' ? 'selected' : '' %>>13:30</option>
+                  <option value="14:00" <%= request && request.time === '14:00' ? 'selected' : '' %>>14:00</option>
+                  <option value="14:30" <%= request && request.time === '14:30' ? 'selected' : '' %>>14:30</option>
+                  <option value="15:00" <%= request && request.time === '15:00' ? 'selected' : '' %>>15:00</option>
+                  <option value="15:30" <%= request && request.time === '15:30' ? 'selected' : '' %>>15:30</option>
+                  <option value="16:00" <%= request && request.time === '16:00' ? 'selected' : '' %>>16:00</option>
+                  <option value="16:30" <%= request && request.time === '16:30' ? 'selected' : '' %>>16:30</option>
+                  <option value="17:00" <%= request && request.time === '17:00' ? 'selected' : '' %>>17:00</option>
+                  <option value="17:30" <%= request && request.time === '17:30' ? 'selected' : '' %>>17:30</option>
+                  <option value="18:00" <%= request && request.time === '18:00' ? 'selected' : '' %>>18:00</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="serviceId">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                  </svg>
+                  Услуга
+                </label>
+                <select id="serviceId" name="serviceId" class="form-control" required>
+                  <option value="">Выберите услугу</option>
+                  <% services.forEach(function(service) { %>
+                    <option value="<%= service.id %>" <%= request && request.serviceId === service.id ? 'selected' : '' %>>
+                      <%= service.name %> - <%= service.price %>
+                    </option>
+                  <% }) %>
+                </select>
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="source">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                  </svg>
+                  Источник
+                </label>
+                <select id="source" name="source" class="form-control">
+                  <option value="Менеджер" <%= request && request.source === 'Менеджер' ? 'selected' : '' %>>Менеджер</option>
+                  <option value="Сайт" <%= request && request.source === 'Сайт' ? 'selected' : '' %>>Сайт</option>
+                  <option value="Телефон" <%= request && request.source === 'Телефон' ? 'selected' : '' %>>Телефон</option>
+                  <option value="Соцсети" <%= request && request.source === 'Соцсети' ? 'selected' : '' %>>Соцсети</option>
+                  <option value="Рекомендация" <%= request && request.source === 'Рекомендация' ? 'selected' : '' %>>Рекомендация</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="status">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                  Статус
+                </label>
+                <select id="status" name="status" class="form-control">
+                  <option value="Новая" <%= request && request.status === 'Новая' ? 'selected' : '' %>>Новая</option>
+                  <option value="В обработке" <%= request && request.status === 'В обработке' ? 'selected' : '' %>>В обработке</option>
+                  <option value="Завершена" <%= request && request.status === 'Завершена' ? 'selected' : '' %>>Завершена</option>
+                  <option value="Отменена" <%= request && request.status === 'Отменена' ? 'selected' : '' %>>Отменена</option>
+                </select>
+              </div>
+            </div>
+            
+            <% if (isAdmin) { %>
+              <div class="form-group">
+                <label for="branchId">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  Филиал
+                </label>
+                <select id="branchId" name="branchId" class="form-control">
+                  <option value="">Выберите филиал</option>
+                  <% branches.forEach(function(branch) { %>
+                    <option value="<%= branch.id %>" <%= request && request.branchId === branch.id ? 'selected' : '' %>>
+                      <%= branch.address %> (<%= branch.city %>)
+                    </option>
+                  <% }) %>
+                </select>
+                <div class="field-hint" style="font-size:0.7rem;color:var(--text-muted);margin-top:0.2rem;">
+                  Только для администратора
+                </div>
+              </div>
+            <% } else if (branches && branches.length > 0) { %>
+              <div class="form-group">
+                <label>Филиал</label>
+                <div class="source-display">
+                  <span class="highlight"><%= branches[0].address %></span> (<%= branches[0].city %>)
+                </div>
+                <input type="hidden" name="branchId" value="<%= branches[0].id %>">
+                <div class="field-hint" style="font-size:0.7rem;color:var(--text-muted);margin-top:0.2rem;">
+                  Филиал автоматически привязан к вашему аккаунту
+                </div>
+              </div>
+            <% } %>
+            
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:0.3rem;">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                <%= isEdit ? 'Сохранить' : 'Добавить' %>
+              </button>
+              <a href="/requests" class="btn btn-outline">Отмена</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  
+  <script src="/js/portal.js"></script>
+</body>
+</html>
