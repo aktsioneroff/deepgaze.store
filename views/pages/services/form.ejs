@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  
+  <link rel="icon" type="image/x-icon" href="/ico/favicon.ico">
+  <link rel="apple-touch-icon" href="/ico/apple-touch-icon.png">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/portal.css">
+  <link rel="stylesheet" href="/css/portal-modules.css">
+  
+  <style>
+    .image-preview {
+      width: 200px;
+      height: 150px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0.5rem 0 1rem 0;
+      overflow: hidden;
+    }
+    .image-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .image-preview .placeholder {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      text-align: center;
+      padding: 1rem;
+    }
+    .form-hint {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  
+  <div class="portal-wrapper">
+    <%- include('../../partials/sidebar', { activePage: '/services', user: user }) %>
+    
+    <main class="portal-main">
+      <header class="portal-header">
+        <div class="portal-header-left">
+          <button class="mobile-sidebar-toggle" onclick="toggleSidebar()" title="Открыть меню">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+          <h1>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.5rem;">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+            </svg>
+            <%= isEdit ? 'Редактирование' : 'Добавление' %> услуги
+          </h1>
+        </div>
+        <div class="portal-header-right">
+          <span class="header-date"><%= new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) %></span>
+        </div>
+      </header>
+      
+      <div class="portal-content">
+        <div class="module-form">
+          <form action="/services/save" method="POST">
+            <% if (isEdit) { %>
+              <input type="hidden" name="id" value="<%= service.id %>">
+            <% } %>
+            
+            <div class="form-group">
+              <label for="name">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                </svg>
+                Наименование услуги
+              </label>
+              <input type="text" id="name" name="name" class="form-control" placeholder="Например: Базовый портрет" value="<%= service ? service.name : '' %>" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="price">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 6v6l4 2"/>
+                </svg>
+                Стоимость услуги
+              </label>
+              <input type="text" id="price" name="price" class="form-control" placeholder="Например: 4 900 ₽" value="<%= service ? service.price : '' %>" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="description">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10 9 9 9 8 9"/>
+                </svg>
+                Описание услуги
+              </label>
+              <textarea id="description" name="description" class="form-control" rows="4" placeholder="Опишите услугу..."><%= service ? service.description : '' %></textarea>
+            </div>
+            
+            <div class="form-group">
+              <label for="image">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                URL изображения
+              </label>
+              <input type="url" id="image" name="image" class="form-control" placeholder="https://example.com/image.jpg" value="<%= service ? service.image : '' %>">
+              <div class="form-hint">Вставьте ссылку на изображение услуги</div>
+            </div>
+            
+            <% if (service && service.image) { %>
+              <div class="form-group">
+                <label>Предпросмотр</label>
+                <div class="image-preview">
+                  <img src="<%= service.image %>" alt="<%= service.name %>" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\\'placeholder\\'>Изображение не загружено</div>'">
+                </div>
+              </div>
+            <% } %>
+            
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:0.3rem;">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                <%= isEdit ? 'Сохранить' : 'Добавить' %>
+              </button>
+              <a href="/services" class="btn btn-outline">Отмена</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const imageInput = document.getElementById('image');
+      if (imageInput) {
+        imageInput.addEventListener('input', function() {
+          const preview = document.querySelector('.image-preview');
+          if (preview && this.value) {
+            preview.innerHTML = '<img src="' + this.value + '" alt="Предпросмотр" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'<div class=\\'placeholder\\'>Изображение не загружено</div>\'">';
+          }
+        });
+      }
+    });
+  </script>
+  
+  <script src="/js/portal.js"></script>
+</body>
+</html>
