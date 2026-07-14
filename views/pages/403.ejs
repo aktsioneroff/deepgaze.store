@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="icon" type="image/x-icon" href="/ico/favicon.ico">
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .error-page {
+      min-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .error-page .error-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+    .error-page h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 3rem;
+      color: #e74c3c;
+      margin-bottom: 0.5rem;
+    }
+    .error-page h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .error-page p {
+      color: var(--text-secondary);
+      max-width: 400px;
+      margin-bottom: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  <div class="container">
+    <%- include('../partials/header', { user: user }) %>
+    <section class="error-page">
+      <div class="error-icon">🚫</div>
+      <h1>403</h1>
+      <h2>Доступ запрещён</h2>
+      <p>У вас недостаточно прав для доступа к этой странице.</p>
+      <a href="/dashboard" class="btn btn-primary">Вернуться на панель</a>
+    </section>
+    <%- include('../partials/footer') %>
+  </div>
+</body>
+</html>
