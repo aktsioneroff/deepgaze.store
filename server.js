@@ -4,37 +4,8 @@ const FileStore = require('session-file-store')(session);
 const path = require('path');
 require('dotenv').config();
 
-// Пытаемся подключить S3, если есть
-let s3 = null;
-let s3Data = null;
-
-try {
-    s3 = require('./config/s3');
-    s3Data = require('./utils/s3Data');
-    console.log('✅ S3 модули загружены');
-} catch (error) {
-    console.log('⚠️ S3 не доступен, работаем с локальными файлами');
-}
-
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// ===== ИНИЦИАЛИЗАЦИЯ =====
-if (s3 && s3Data) {
-    console.log('\n📦 ===== S3 ИНИЦИАЛИЗАЦИЯ =====');
-    s3.logS3Connection();
-    
-    (async () => {
-        const connected = await s3.testS3Connection();
-        if (connected) {
-            console.log('🚀 S3 готов к работе!');
-        } else {
-            console.log('⚠️ S3 не доступен, данные будут храниться локально');
-        }
-    })();
-} else {
-    console.log('📁 Работаем с локальным хранилищем данных');
-}
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -69,9 +40,11 @@ app.use((req, res, next) => {
     next();
 });
 
+// ===== МАРШРУТЫ =====
 const indexRoutes = require('./routes/index');
 app.use('/', indexRoutes);
 
+// 404
 app.use((req, res) => {
     res.status(404).render('pages/404', { 
         title: 'Страница не найдена',
