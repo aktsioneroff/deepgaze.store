@@ -10,7 +10,7 @@ const SESSIONS_DIR = path.join(__dirname, 'sessions');
 const DATA_DIR = path.join(__dirname, 'data');
 
 // Создаем папки если их нет
-[sessionsDir, dataDir].forEach(dir => {
+[SESSIONS_DIR, DATA_DIR].forEach(dir => {
     if (!fs.existsSync(dir)) {
         try {
             fs.mkdirSync(dir, { recursive: true, mode: 0o755 });
@@ -96,7 +96,7 @@ app.use(session({
         path: SESSIONS_DIR,
         ttl: 7 * 24 * 60 * 60,
         retries: 0,
-        reapInterval: 60 * 60 // чистить каждый час
+        reapInterval: 60 * 60
     }),
     secret: process.env.SESSION_SECRET || 'super-secret-key-for-deep-gaze-2025',
     resave: false,
