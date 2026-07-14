@@ -4,30 +4,37 @@ const FileStore = require('session-file-store')(session);
 const path = require('path');
 require('dotenv').config();
 
-const s3 = require('./config/s3');
-const s3Data = require('./utils/s3Data');
+// Пытаемся подключить S3, если есть
+let s3 = null;
+let s3Data = null;
+
+try {
+    s3 = require('./config/s3');
+    s3Data = require('./utils/s3Data');
+    console.log('✅ S3 модули загружены');
+} catch (error) {
+    console.log('⚠️ S3 не доступен, работаем с локальными файлами');
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ===== ИНИЦИАЛИЗАЦИЯ S3 =====
-console.log('\n📦 ===== S3 ИНИЦИАЛИЗАЦИЯ =====');
-s3.logS3Connection();
-
-let s3Connected = false;
-(async () => {
-    s3Connected = await s3.testS3Connection();
-    if (s3Connected) {
-        console.log('🚀 S3 готов к работе!');
-        const files = await s3Data.listDataFiles();
-        console.log(`📁 Найдено файлов в S3: ${files.length}`);
-        if (files.length === 0) {
-            console.log('💡 Совет: запустите npm run migrate-s3 для переноса данных');
+// ===== ИНИЦИАЛИЗАЦИЯ =====
+if (s3 && s3Data) {
+    console.log('\n📦 ===== S3 ИНИЦИАЛИЗАЦИЯ =====');
+    s3.logS3Connection();
+    
+    (async () => {
+        const connected = await s3.testS3Connection();
+        if (connected) {
+            console.log('🚀 S3 готов к работе!');
+        } else {
+            console.log('⚠️ S3 не доступен, данные будут храниться локально');
         }
-    } else {
-        console.log('⚠️ S3 не доступен, данные будут храниться локально');
-    }
-})();
+    })();
+} else {
+    console.log('📁 Работаем с локальным хранилищем данных');
+}
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -74,6 +81,5 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
     console.log(`\n🚀 Сервер запущен на http://localhost:${PORT}`);
-    console.log(`📌 S3 статус: ${s3Connected ? '✅ Подключен' : '❌ Недоступен'}`);
     console.log('📌 Войдите под admin / admin123');
 });
