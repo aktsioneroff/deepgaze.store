@@ -7,21 +7,27 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+// ===== ПРАВИЛЬНАЯ НАСТРОЙКА ПУТЕЙ =====
+// Получаем абсолютный путь к корню проекта
+const projectRoot = path.resolve(__dirname);
 
+// Настройка EJS
+app.set('view engine', 'ejs');
+app.set('views', path.join(projectRoot, 'views'));
+
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(projectRoot, 'public')));
 
-// ===== НАСТРОЙКА СЕССИЙ С ФАЙЛОВЫМ ХРАНИЛИЩЕМ =====
+// ===== НАСТРОЙКА СЕССИЙ =====
 app.use(session({
     store: new FileStore({
-        path: path.join(__dirname, 'sessions'),
-        ttl: 7 * 24 * 60 * 60, // 7 дней
+        path: path.join(projectRoot, 'sessions'),
+        ttl: 7 * 24 * 60 * 60,
         retries: 0
     }),
-    secret: 'super-secret-key-for-deep-gaze-2025',
+    secret: process.env.SESSION_SECRET || 'super-secret-key-for-deep-gaze-2025',
     resave: false,
     saveUninitialized: false,
     cookie: { 
@@ -32,7 +38,7 @@ app.use(session({
     }
 }));
 
-// ===== ПОДРОБНОЕ ЛОГИРОВАНИЕ =====
+// ===== ЛОГИРОВАНИЕ =====
 app.use((req, res, next) => {
     const sessionId = req.session ? req.session.id : 'НЕТ СЕССИИ';
     const userId = req.session?.user?.login || 'НЕТ ПОЛЬЗОВАТЕЛЯ';
@@ -40,13 +46,6 @@ app.use((req, res, next) => {
     console.log(`  ├─ Session ID: ${sessionId}`);
     console.log(`  └─ User: ${userId}`);
     next();
-});
-
-// ===== ТЕСТОВЫЙ МАРШРУТ =====
-app.post('/test-login', (req, res) => {
-    console.log('🔥🔥🔥 POST /test-login ВЫЗВАН! 🔥🔥🔥');
-    console.log('  ├─ Body:', req.body);
-    res.json({ success: true, body: req.body });
 });
 
 // ===== МАРШРУТЫ =====
@@ -63,6 +62,8 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
     console.log(`🚀 Сервер запущен на http://localhost:${PORT}`);
+    console.log(`📁 Views: ${path.join(projectRoot, 'views')}`);
+    console.log(`📁 Public: ${path.join(projectRoot, 'public')}`);
+    console.log(`📁 Sessions: ${path.join(projectRoot, 'sessions')}`);
     console.log('📌 Войдите под admin / admin123');
-    console.log('📌 Сессии сохраняются в папку sessions');
 });
