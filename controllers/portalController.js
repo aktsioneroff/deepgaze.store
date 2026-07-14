@@ -96,7 +96,7 @@ function getUserPermissions(user) {
             requests: { view: true, create: true, edit: true, delete: true },
             services: { view: true, create: true, edit: true, delete: true },
             portfolio: { view: true, create: true, edit: true, delete: true },
-            partners: { view: false, create: false, edit: false, delete: false },
+            partners: { view: true, create: true, edit: true, delete: true },
             branches: { view: false, create: false, edit: false, delete: false },
             employees: { view: true, create: true, edit: true, delete: true },
             referrals: { view: true, create: true, edit: true, delete: true }
@@ -120,7 +120,6 @@ exports.getDashboard = (req, res) => {
     const requests = readData(REQUESTS_FILE);
     const permissions = getUserPermissions(req.session.user);
     
-    // Фильтруем заявки по филиалу (если не админ)
     let userBranchId = null;
     let filteredRequests = requests;
     
@@ -133,7 +132,6 @@ exports.getDashboard = (req, res) => {
     const activeCount = filteredRequests.filter(r => r.status === 'В обработке').length;
     const completedCount = filteredRequests.filter(r => r.status === 'Завершена').length;
     
-    // Последние заявки (новые и в обработке)
     const recentRequests = filteredRequests
         .filter(r => r.status === 'Новая' || r.status === 'В обработке')
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -593,7 +591,8 @@ exports.getEmployees = (req, res) => {
         employees: employeesWithBranch,
         branches: branches,
         shortId: shortId,
-        permissions: permissions
+        permissions: permissions,
+        isAdmin: req.session.user.role === 'admin'
     });
 };
 
@@ -616,13 +615,19 @@ exports.getEmployeeForm = (req, res) => {
         branches: branches,
         isEdit: !!id,
         permissions: permissions,
-        isAdmin: req.session.user.role === 'admin' // <-- ДОБАВЛЯЕМ ЭТУ СТРОКУ
+        isAdmin: req.session.user.role === 'admin'
     });
 };
 
 exports.saveEmployee = (req, res) => {
     const { id, fullName, birthDate, position, branchId, phone, login, password } = req.body;
     const employees = readData(EMPLOYEES_FILE);
+    const isAdmin = req.session.user.role === 'admin';
+    
+    // Проверка: генерального директора может создать только администратор
+    if (position === 'Генеральный директор' && !isAdmin) {
+        return res.status(403).send('Только администратор может назначить генерального директора');
+    }
     
     if (id) {
         const index = employees.findIndex(e => e.id === id);
@@ -639,12 +644,6 @@ exports.saveEmployee = (req, res) => {
             };
         }
     } else {
-        // Проверка: генерального директора может создать только администратор
-        const isAdmin = req.session.user.role === 'admin';
-        if (position === 'Генеральный директор' && !isAdmin) {
-            return res.status(403).send('Только администратор может назначить генерального директора');
-        }
-        
         employees.push({
             id: generateId(),
             fullName,
