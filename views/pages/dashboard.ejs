@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  
+  <link rel="icon" type="image/x-icon" href="/ico/favicon.ico">
+  <link rel="apple-touch-icon" href="/ico/apple-touch-icon.png">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/portal.css">
+  
+  <style>
+    /* ===== ДАШБОРД ===== */
+    .dashboard-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    
+    .stat-number {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 700;
+    }
+    
+    .stat-number.new { color: #e74c3c; }
+    .stat-number.active { color: #f1c40f; }
+    .stat-number.completed { color: #2ecc71; }
+    
+    .stat-label {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      margin-top: 0.2rem;
+    }
+    
+    /* ===== БЫСТРЫЙ СТАРТ ===== */
+    .quick-start {
+      margin-bottom: 2rem;
+    }
+    
+    .quick-start h3 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .quick-start h3 svg {
+      stroke: var(--accent);
+      width: 22px;
+      height: 22px;
+    }
+    
+    .quick-start-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+    }
+    
+    .quick-start-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1.2rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      text-decoration: none;
+      color: var(--text-secondary);
+      transition: all 0.3s ease;
+    }
+    
+    .quick-start-card:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    
+    .quick-start-card .icon {
+      width: 36px;
+      height: 36px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.5;
+    }
+    
+    .quick-start-card .label {
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    
+    /* ===== ПОСЛЕДНИЕ ЗАЯВКИ ===== */
+    .recent-requests {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    
+    .recent-requests .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .recent-requests .header h3 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .recent-requests .header h3 svg {
+      stroke: var(--accent);
+      width: 20px;
+      height: 20px;
+    }
+    
+    .recent-requests .header a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.8rem;
+      transition: var(--transition);
+    }
+    
+    .recent-requests .header a:hover {
+      text-decoration: underline;
+    }
+    
+    .recent-requests .table-wrap {
+      overflow-x: auto;
+    }
+    
+    .recent-requests table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    
+    .recent-requests th {
+      padding: 0.6rem 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .recent-requests td {
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: middle;
+    }
+    
+    .recent-requests tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .recent-requests tr:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    
+    .recent-requests .status-badge {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 2rem;
+      font-size: 0.65rem;
+      font-weight: 600;
+    }
+    
+    .recent-requests .status-badge.new {
+      background: rgba(231, 76, 60, 0.15);
+      color: #e74c3c;
+    }
+    
+    .recent-requests .status-badge.processing {
+      background: rgba(241, 196, 15, 0.15);
+      color: #f1c40f;
+    }
+    
+    .recent-requests .source-badge {
+      display: inline-block;
+      padding: 0.15rem 0.4rem;
+      border-radius: 2rem;
+      font-size: 0.6rem;
+      font-weight: 500;
+      background: rgba(200, 164, 92, 0.12);
+      color: var(--accent);
+    }
+    
+    .recent-requests .source-badge.site {
+      background: rgba(77, 184, 176, 0.12);
+      color: var(--accent3);
+    }
+    
+    .recent-requests .source-badge.manager {
+      background: rgba(139, 111, 207, 0.12);
+      color: var(--accent2);
+    }
+    
+    .recent-requests .empty {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-muted);
+    }
+    
+    .recent-requests .empty .empty-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    /* ===== АДАПТИВНОСТЬ ===== */
+    @media (max-width: 768px) {
+      .dashboard-stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .quick-start-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .dashboard-stats {
+        grid-template-columns: 1fr;
+      }
+      
+      .quick-start-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .recent-requests table {
+        font-size: 0.75rem;
+      }
+      
+      .recent-requests th,
+      .recent-requests td {
+        padding: 0.4rem 0.6rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  
+  <div class="portal-wrapper">
+    <%- include('../partials/sidebar', { activePage: 'dashboard', user: user, permissions: permissions }) %>
+    
+    <main class="portal-main">
+      <header class="portal-header">
+        <div class="portal-header-left">
+          <button class="mobile-sidebar-toggle" onclick="toggleSidebar()" title="Открыть меню">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+          <h1>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.5rem;">
+              <rect x="3" y="3" width="7" height="7" rx="1"/>
+              <rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/>
+              <rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+            Панель управления
+          </h1>
+        </div>
+        <div class="portal-header-right">
+          <span class="header-date"><%= new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) %></span>
+        </div>
+      </header>
+      
+      <div class="portal-content">
+        <!-- ===== СТАТИСТИКА ===== -->
+        <div class="dashboard-stats">
+          <div class="stat-card">
+            <div class="stat-number new"><%= newCount || 0 %></div>
+            <div class="stat-label">Новых заявок</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number active"><%= activeCount || 0 %></div>
+            <div class="stat-label">Активных заявок</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number completed"><%= completedCount || 0 %></div>
+            <div class="stat-label">Завершённых заявок</div>
+          </div>
+        </div>
+        
+        <!-- ===== БЫСТРЫЙ СТАРТ ===== -->
+        <div class="quick-start">
+          <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+            Быстрый старт
+          </h3>
+          <div class="quick-start-grid">
+            <!-- Заявки - доступны всем -->
+            <a href="/requests" class="quick-start-card">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+              <span class="label">Заявки</span>
+            </a>
+            
+            <!-- Услуги - только если есть права -->
+            <% if (permissions && permissions.services && permissions.services.view) { %>
+            <a href="/services" class="quick-start-card">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+              </svg>
+              <span class="label">Услуги</span>
+            </a>
+            <% } %>
+            
+            <!-- Портфолио - только если есть права -->
+            <% if (permissions && permissions.portfolio && permissions.portfolio.view) { %>
+            <a href="/portfolio" class="quick-start-card">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <span class="label">Портфолио</span>
+            </a>
+            <% } %>
+            
+            <!-- Партнёры - только если есть права -->
+            <% if (permissions && permissions.partners && permissions.partners.view) { %>
+            <a href="/partners" class="quick-start-card">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              <span class="label">Партнёры</span>
+            </a>
+            <% } %>
+            
+            <!-- Рефералы - доступны всем -->
+            <a href="/portal/referrals" class="quick-start-card">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+              </svg>
+              <span class="label">Рефералы</span>
+            </a>
+            
+            <!-- Филиалы - только если есть права -->
+            <% if (permissions && permissions.branches && permissions.branches.view) { %>
+            <a href="/branches" class="quick-start-card">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+              <span class="label">Филиалы</span>
+            </a>
+            <% } %>
+            
+            <!-- Сотрудники - только если есть права -->
+            <% if (permissions && permissions.employees && permissions.employees.view) { %>
+            <a href="/employees" class="quick-start-card">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              <span class="label">Сотрудники</span>
+            </a>
+            <% } %>
+          </div>
+        </div>
+        
+        <!-- ===== ПОСЛЕДНИЕ ЗАЯВКИ ===== -->
+        <div class="recent-requests">
+          <div class="header">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+              Активные заявки
+            </h3>
+            <a href="/requests">Все заявки →</a>
+          </div>
+          
+          <div class="table-wrap">
+            <% if (recentRequests && recentRequests.length > 0) { %>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Клиент</th>
+                    <th>Телефон</th>
+                    <th>Дата и время</th>
+                    <th>Услуга</th>
+                    <th>Источник</th>
+                    <th>Статус</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% recentRequests.forEach(function(req) { %>
+                    <tr>
+                      <td><strong><%= req.name %></strong></td>
+                      <td><%= req.phone %></td>
+                      <td><%= req.date %> в <%= req.time %></td>
+                      <td><%= req.serviceName %></td>
+                      <td>
+                        <span class="source-badge <%= req.source === 'Сайт' ? 'site' : 'manager' %>">
+                          <%= req.source || 'Менеджер' %>
+                        </span>
+                      </td>
+                      <td>
+                        <span class="status-badge <%= req.status === 'Новая' ? 'new' : 'processing' %>">
+                          <%= req.status %>
+                        </span>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            <% } else { %>
+              <div class="empty">
+                <div class="empty-icon">📭</div>
+                <p>Нет активных заявок</p>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  
+  <script src="/js/portal.js"></script>
+</body>
+</html>
