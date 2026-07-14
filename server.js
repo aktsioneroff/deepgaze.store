@@ -2,7 +2,6 @@ const express = require('express');
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
 const path = require('path');
-require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -44,7 +43,6 @@ app.use((req, res, next) => {
 const indexRoutes = require('./routes/index');
 app.use('/', indexRoutes);
 
-// 404
 app.use((req, res) => {
     res.status(404).render('pages/404', { 
         title: 'Страница не найдена',
