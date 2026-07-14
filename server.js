@@ -43,7 +43,7 @@ async function testS3Connection() {
     }
 }
 
-// ===== ФУНКЦИИ ДЛЯ РАБОТЫ С S3 (ЭКСПОРТИРУЕМ) =====
+// ===== ФУНКЦИИ ДЛЯ РАБОТЫ С S3 =====
 async function uploadToS3(key, data, contentType = 'application/json') {
     if (!s3Connected) {
         console.log(`⚠️ S3 не доступен, пропускаем загрузку: ${key}`);
@@ -104,7 +104,7 @@ async function deleteFromS3(key) {
     }
 }
 
-// ===== ЭКСПОРТ ФУНКЦИЙ ДЛЯ ДРУГИХ МОДУЛЕЙ =====
+// ===== ЭКСПОРТ ФУНКЦИЙ =====
 module.exports = {
     s3Client,
     s3Config,
