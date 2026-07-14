@@ -1,8 +1,8 @@
 const s3 = require('../config/s3');
-const path = require('path');
 
 // Кэш для данных (оптимизация)
 const cache = {};
+const CACHE_TTL = 5000; // 5 секунд
 
 // ===== ЧТЕНИЕ ДАННЫХ ИЗ S3 =====
 async function readData(fileName) {
@@ -10,7 +10,8 @@ async function readData(fileName) {
     
     try {
         // Проверяем кэш
-        if (cache[key] && cache[key].timestamp > Date.now() - 5000) {
+        if (cache[key] && cache[key].timestamp > Date.now() - CACHE_TTL) {
+            console.log(`📦 Кэш: ${fileName}`);
             return cache[key].data;
         }
         
@@ -84,6 +85,12 @@ async function listDataFiles() {
     }
 }
 
+// ===== ОЧИСТКА КЭША =====
+function clearCache() {
+    Object.keys(cache).forEach(key => delete cache[key]);
+    console.log('🗑️ Кэш очищен');
+}
+
 // ===== МИГРАЦИЯ ЛОКАЛЬНЫХ ДАННЫХ В S3 =====
 async function migrateLocalDataToS3() {
     const fs = require('fs');
@@ -91,6 +98,9 @@ async function migrateLocalDataToS3() {
     const localDataDir = path.join(__dirname, '../data');
     
     console.log('📦 ===== МИГРАЦИЯ ДАННЫХ В S3 =====');
+    console.log(`  ├─ Локальная папка: ${localDataDir}`);
+    console.log(`  ├─ Бакет: ${s3.BUCKET_NAME}`);
+    console.log(`  └─ Путь: data/`);
     
     if (!fs.existsSync(localDataDir)) {
         console.log('⚠️ Папка data не найдена, миграция не требуется');
@@ -99,6 +109,8 @@ async function migrateLocalDataToS3() {
     
     const files = fs.readdirSync(localDataDir);
     let migrated = 0;
+    let skipped = 0;
+    let errors = 0;
     
     for (const file of files) {
         if (!file.endsWith('.json')) continue;
@@ -116,13 +128,18 @@ async function migrateLocalDataToS3() {
                 migrated++;
             } else {
                 console.log(`  ├─ ⏭️ Пропущен (уже есть): ${file}`);
+                skipped++;
             }
         } catch (error) {
             console.error(`  ├─ ❌ Ошибка миграции ${file}:`, error.message);
+            errors++;
         }
     }
     
-    console.log(`📦 ===== МИГРАЦИЯ ЗАВЕРШЕНА (${migrated} файлов) =====`);
+    console.log('📦 ===== МИГРАЦИЯ ЗАВЕРШЕНА =====');
+    console.log(`  ├─ ✅ Мигрировано: ${migrated}`);
+    console.log(`  ├─ ⏭️ Пропущено: ${skipped}`);
+    console.log(`  └─ ❌ Ошибок: ${errors}`);
 }
 
 module.exports = {
@@ -130,5 +147,6 @@ module.exports = {
     writeData,
     deleteData,
     listDataFiles,
+    clearCache,
     migrateLocalDataToS3
 };
