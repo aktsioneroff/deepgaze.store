@@ -1,0 +1,24 @@
+[
+  {
+    "id": "mrj2znik8t4nx",
+    "fullName": "Пищ Сергей Павлович",
+    "birthDate": "1999-07-21",
+    "position": "Генеральный директор",
+    "branchId": "",
+    "phone": "+7 (952) 000 91-10",
+    "login": "spishch",
+    "password": "Seven7zsxa@",
+    "createdAt": "2026-07-13T10:30:13.196Z"
+  },
+  {
+    "id": "mrkdm2rwm26rc",
+    "fullName": "Николай Колмаков",
+    "birthDate": "2003-01-01",
+    "position": "Управляющий",
+    "branchId": "mrj2w4sf9nw1v",
+    "phone": "+7 (962) 811 80-49",
+    "login": "kkolmakov",
+    "password": "Kolya123@",
+    "createdAt": "2026-07-14T08:15:21.740Z"
+  }
+]
