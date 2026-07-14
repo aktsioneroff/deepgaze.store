@@ -1,0 +1,52 @@
+<header class="header">
+  <div class="logo">DEEP<span>.</span>GAZE</div>
+
+  <!-- Десктопная навигация -->
+  <nav class="nav-desktop" id="navDesktop">
+    <a href="#services" class="active">Услуги</a>
+    <a href="#portfolio">Портфолио</a>
+    <a href="#trusted">Партнёры</a>
+    <a href="#loyalty">Лояльность</a>
+    <a href="#location">Контакты</a>
+    <a href="#booking">Запись</a>
+  </nav>
+
+  <div class="header-actions">
+    <button class="btn btn-outline" onclick="document.getElementById('booking').scrollIntoView({behavior:'smooth'})">Связаться</button>
+    
+    <% if (user) { %>
+      <a href="/dashboard" class="btn btn-primary" style="text-decoration:none;">Панель</a>
+      <a href="/logout" class="btn btn-outline" style="text-decoration:none;">Выход</a>
+    <% } else { %>
+      <button class="btn-icon-login" onclick="openLoginModal()" title="Личный кабинет">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7"/></svg>
+      </button>
+    <% } %>
+    
+    <!-- Бургер -->
+    <button class="burger-btn" id="burgerBtn" onclick="toggleMobileMenu()" aria-label="Меню">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<!-- Мобильное меню -->
+<div class="mobile-menu-overlay" id="mobileMenuOverlay" onclick="closeMobileMenu()">
+  <nav class="mobile-menu" id="mobileMenu" onclick="event.stopPropagation()">
+    <a href="#services" onclick="navigateMobile(this)">Услуги</a>
+    <a href="#portfolio" onclick="navigateMobile(this)">Портфолио</a>
+    <a href="#trusted" onclick="navigateMobile(this)">Партнёры</a>
+    <a href="#loyalty" onclick="navigateMobile(this)">Лояльность</a>
+    <a href="#location" onclick="navigateMobile(this)">Контакты</a>
+    <a href="#booking" onclick="navigateMobile(this)">Запись</a>
+    
+    <% if (user) { %>
+      <a href="/dashboard" onclick="navigateMobile(this)">Панель управления</a>
+      <a href="/logout" onclick="navigateMobile(this)">Выход</a>
+    <% } else { %>
+      <button class="btn btn-outline" style="margin-top:0.8rem;justify-content:center;" onclick="closeMobileMenu(); openLoginModal();">Войти</button>
+    <% } %>
+    
+    <button class="btn btn-primary" style="margin-top:0.4rem;justify-content:center;" onclick="closeMobileMenu(); document.getElementById('booking').scrollIntoView({behavior:'smooth'});">Записаться</button>
+  </nav>
+</div>
