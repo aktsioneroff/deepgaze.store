@@ -5,55 +5,161 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
+// ===== S3 КЛИЕНТ =====
+const { S3Client, ListBucketsCommand, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ===== ДИАГНОСТИКА =====
-const projectRoot = __dirname;
-console.log('📁 __dirname:', projectRoot);
+// ===== КОНФИГУРАЦИЯ S3 =====
+const s3Config = {
+    endpoint: 'https://s3.twcstorage.ru',
+    region: 'ru-1',
+    credentials: {
+        accessKeyId: 'WH5JV70A76ML0WY9VWJM',
+        secretAccessKey: 'EtN37sHNRkLs5dPgJzkB2TQFUW8mSE81gDIFe8DP'
+    },
+    forcePathStyle: true
+};
 
-// Проверяем существование папок
-const viewsPath = path.join(projectRoot, 'views');
-const publicPath = path.join(projectRoot, 'public');
+const s3Client = new S3Client(s3Config);
+const BUCKET_NAME = 'deep-gaze-storage';
 
-console.log('📁 Views path:', viewsPath);
-console.log('📁 Public path:', publicPath);
-
-if (!fs.existsSync(viewsPath)) {
-    console.error('❌ Папка views не найдена!');
-    process.exit(1);
+// ===== ЛОГИРОВАНИЕ ПОДКЛЮЧЕНИЯ К S3 =====
+async function testS3Connection() {
+    console.log('\n📦 ПРОВЕРКА ПОДКЛЮЧЕНИЯ К S3...');
+    console.log(`📍 Endpoint: ${s3Config.endpoint}`);
+    console.log(`🔑 Access Key: ${s3Config.credentials.accessKeyId.substring(0, 8)}...`);
+    console.log(`📦 Bucket: ${BUCKET_NAME}`);
+    
+    try {
+        // Проверяем доступ к бакету
+        const listCommand = new ListObjectsV2Command({
+            Bucket: BUCKET_NAME,
+            MaxKeys: 1
+        });
+        
+        const response = await s3Client.send(listCommand);
+        console.log('✅ S3 ПОДКЛЮЧЕН УСПЕШНО!');
+        console.log(`📁 Бакет "${BUCKET_NAME}" доступен`);
+        console.log(`📄 Файлов в бакете: ${response.KeyCount || 0}`);
+        console.log('📌 S3 готов к работе!\n');
+        return true;
+    } catch (error) {
+        console.error('❌ ОШИБКА ПОДКЛЮЧЕНИЯ К S3:');
+        console.error(`  ├─ Код ошибки: ${error.Code || 'неизвестен'}`);
+        console.error(`  ├─ Сообщение: ${error.message || 'неизвестно'}`);
+        console.error(`  └─ Статус: ${error.$metadata?.httpStatusCode || 'неизвестен'}`);
+        
+        if (error.Code === 'NoSuchBucket') {
+            console.log('\n⚠️ Бакет не найден. Попытка создать...');
+            try {
+                const createCommand = new PutObjectCommand({
+                    Bucket: BUCKET_NAME,
+                    Key: 'test.txt',
+                    Body: 'S3 connection test'
+                });
+                await s3Client.send(createCommand);
+                console.log(`✅ Бакет "${BUCKET_NAME}" создан успешно!`);
+                return true;
+            } catch (createError) {
+                console.error('❌ Не удалось создать бакет:', createError.message);
+                return false;
+            }
+        }
+        return false;
+    }
 }
 
-if (!fs.existsSync(publicPath)) {
-    console.error('❌ Папка public не найдена!');
-    process.exit(1);
+// ===== ФУНКЦИИ ДЛЯ РАБОТЫ С S3 =====
+async function uploadToS3(key, body, contentType = 'application/octet-stream') {
+    try {
+        const command = new PutObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: key,
+            Body: body,
+            ContentType: contentType
+        });
+        const response = await s3Client.send(command);
+        console.log(`📤 Загружено в S3: ${key}`);
+        return response;
+    } catch (error) {
+        console.error(`❌ Ошибка загрузки в S3 (${key}):`, error.message);
+        throw error;
+    }
 }
 
-console.log('✅ Все папки найдены');
+async function getFromS3(key) {
+    try {
+        const command = new GetObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: key
+        });
+        const response = await s3Client.send(command);
+        console.log(`📥 Загружено из S3: ${key}`);
+        return response;
+    } catch (error) {
+        console.error(`❌ Ошибка получения из S3 (${key}):`, error.message);
+        throw error;
+    }
+}
 
-// ===== НАСТРОЙКА VIEWS =====
+async function deleteFromS3(key) {
+    try {
+        const command = new DeleteObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: key
+        });
+        const response = await s3Client.send(command);
+        console.log(`🗑️ Удалено из S3: ${key}`);
+        return response;
+    } catch (error) {
+        console.error(`❌ Ошибка удаления из S3 (${key}):`, error.message);
+        throw error;
+    }
+}
+
+async function listS3Files(prefix = '') {
+    try {
+        const command = new ListObjectsV2Command({
+            Bucket: BUCKET_NAME,
+            Prefix: prefix
+        });
+        const response = await s3Client.send(command);
+        console.log(`📋 Список файлов в S3 (${prefix || 'корень'}):`, response.Contents?.length || 0);
+        return response.Contents || [];
+    } catch (error) {
+        console.error(`❌ Ошибка получения списка из S3:`, error.message);
+        throw error;
+    }
+}
+
+// ===== ЭКСПОРТ ФУНКЦИЙ =====
+module.exports = {
+    s3Client,
+    BUCKET_NAME,
+    uploadToS3,
+    getFromS3,
+    deleteFromS3,
+    listS3Files,
+    testS3Connection
+};
+
+// ===== НАСТРОЙКА EXPRESS =====
 app.set('view engine', 'ejs');
-app.set('views', viewsPath);
+app.set('views', path.join(__dirname, 'views'));
 
-// ===== MIDDLEWARE =====
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(publicPath));
-
-// ===== СЕССИИ =====
-const sessionsPath = path.join(projectRoot, 'sessions');
-if (!fs.existsSync(sessionsPath)) {
-    fs.mkdirSync(sessionsPath, { recursive: true });
-    console.log('📁 Создана папка sessions');
-}
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({
     store: new FileStore({
-        path: sessionsPath,
+        path: path.join(__dirname, 'sessions'),
         ttl: 7 * 24 * 60 * 60,
         retries: 0
     }),
-    secret: process.env.SESSION_SECRET || 'super-secret-key-for-deep-gaze-2025',
+    secret: 'deep-gaze-super-secret-key-2025',
     resave: false,
     saveUninitialized: false,
     cookie: { 
@@ -64,7 +170,6 @@ app.use(session({
     }
 }));
 
-// ===== ЛОГИРОВАНИЕ =====
 app.use((req, res, next) => {
     const sessionId = req.session ? req.session.id : 'НЕТ СЕССИИ';
     const userId = req.session?.user?.login || 'НЕТ ПОЛЬЗОВАТЕЛЯ';
@@ -74,17 +179,29 @@ app.use((req, res, next) => {
     next();
 });
 
-// ===== МАРШРУТЫ =====
-try {
-    const indexRoutes = require('./routes/index');
-    app.use('/', indexRoutes);
-    console.log('✅ Маршруты загружены');
-} catch (error) {
-    console.error('❌ Ошибка загрузки маршрутов:', error.message);
-    process.exit(1);
-}
+// ===== ТЕСТОВЫЙ МАРШРУТ ДЛЯ ПРОВЕРКИ S3 =====
+app.get('/api/s3-test', async (req, res) => {
+    try {
+        const files = await listS3Files();
+        res.json({
+            success: true,
+            connected: true,
+            bucket: BUCKET_NAME,
+            filesCount: files.length,
+            files: files.slice(0, 10)
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
 
-// ===== 404 =====
+// ===== МАРШРУТЫ =====
+const indexRoutes = require('./routes/index');
+app.use('/', indexRoutes);
+
 app.use((req, res) => {
     res.status(404).render('pages/404', { 
         title: 'Страница не найдена',
@@ -92,45 +209,17 @@ app.use((req, res) => {
     });
 });
 
-// ===== ОБРАБОТКА ОШИБОК =====
-app.use((err, req, res, next) => {
-    console.error('❌ Ошибка сервера:', err.message);
-    console.error(err.stack);
-    res.status(500).send('Внутренняя ошибка сервера');
-});
-
 // ===== ЗАПУСК =====
-const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Сервер запущен на http://localhost:${PORT}`);
-    console.log(`📁 Views: ${viewsPath}`);
-    console.log(`📁 Public: ${publicPath}`);
-    console.log(`📁 Sessions: ${sessionsPath}`);
-    console.log('📌 Войдите под admin / admin123');
-});
-
-// ===== ОБРАБОТКА SIGTERM =====
-process.on('SIGTERM', () => {
-    console.log('📌 Получен SIGTERM, завершаем работу...');
-    server.close(() => {
-        console.log('✅ Сервер остановлен');
-        process.exit(0);
+async function startServer() {
+    // Проверяем подключение к S3
+    const s3Connected = await testS3Connection();
+    
+    app.listen(PORT, () => {
+        console.log(`🚀 Сервер запущен на http://localhost:${PORT}`);
+        console.log(`📁 S3 статус: ${s3Connected ? '✅ ПОДКЛЮЧЕН' : '❌ НЕ ПОДКЛЮЧЕН'}`);
+        console.log(`📌 Войдите под admin / admin123`);
+        console.log(`📌 Проверка S3: GET /api/s3-test\n`);
     });
-});
+}
 
-process.on('SIGINT', () => {
-    console.log('📌 Получен SIGINT, завершаем работу...');
-    server.close(() => {
-        console.log('✅ Сервер остановлен');
-        process.exit(0);
-    });
-});
-
-// ===== ОБРАБОТКА НЕОБРАБОТАННЫХ ОШИБОК =====
-process.on('uncaughtException', (err) => {
-    console.error('❌ Необработанная ошибка:', err.message);
-    console.error(err.stack);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('❌ Необработанный reject:', reason);
-});
+startServer();
