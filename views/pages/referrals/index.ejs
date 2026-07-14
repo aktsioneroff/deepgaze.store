@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  
+  <link rel="icon" type="image/x-icon" href="/ico/favicon.ico">
+  <link rel="apple-touch-icon" href="/ico/apple-touch-icon.png">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/portal.css">
+  <link rel="stylesheet" href="/css/portal-modules.css">
+  
+  <style>
+    /* ===== БОНУСЫ ===== */
+    .bonus-cell {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    
+    /* ===== ПОИСК И ОПЕРАЦИИ ===== */
+    .bonus-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding: 1.2rem 1.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      align-items: center;
+    }
+    
+    .bonus-actions .search-wrap {
+      display: flex;
+      flex: 1;
+      gap: 0.5rem;
+      min-width: 250px;
+    }
+    
+    .bonus-actions .search-wrap input {
+      flex: 1;
+      padding: 0.6rem 1rem;
+      border-radius: 0.5rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem;
+      transition: var(--transition);
+      min-width: 150px;
+    }
+    
+    .bonus-actions .search-wrap input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(200, 164, 92, 0.1);
+    }
+    
+    .bonus-actions .search-wrap .search-results {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 10;
+      margin-top: 0.2rem;
+    }
+    
+    .bonus-actions .search-wrap .search-results .result-item {
+      padding: 0.6rem 1rem;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .bonus-actions .search-wrap .search-results .result-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+    
+    .bonus-actions .search-wrap .search-results .result-item:last-child {
+      border-bottom: none;
+    }
+    
+    .bonus-actions .search-wrap .search-results .result-item .result-bonus {
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+    
+    .bonus-actions .search-wrap .search-results.active {
+      display: block;
+    }
+    
+    .bonus-actions .selected-client {
+      display: none;
+      padding: 0.5rem 1rem;
+      background: rgba(200, 164, 92, 0.08);
+      border: 1px solid rgba(200, 164, 92, 0.2);
+      border-radius: 0.5rem;
+      color: var(--text);
+      font-size: 0.85rem;
+      min-width: 150px;
+    }
+    
+    .bonus-actions .selected-client.active {
+      display: block;
+    }
+    
+    .bonus-actions .selected-client .client-name {
+      font-weight: 600;
+      color: var(--accent);
+    }
+    
+    .bonus-actions .selected-client .client-bonus {
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+    }
+    
+    .bonus-actions .bonus-btns {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    
+    .bonus-actions .bonus-btns .btn-sm {
+      padding: 0.4rem 1rem;
+      font-size: 0.75rem;
+      border-radius: 0.5rem;
+    }
+    
+    .bonus-actions .bonus-btns .btn-add {
+      background: rgba(46, 204, 113, 0.15);
+      color: #2ecc71;
+      border: 1px solid rgba(46, 204, 113, 0.2);
+    }
+    
+    .bonus-actions .bonus-btns .btn-add:hover {
+      background: rgba(46, 204, 113, 0.25);
+    }
+    
+    .bonus-actions .bonus-btns .btn-sub {
+      background: rgba(231, 76, 60, 0.15);
+      color: #e74c3c;
+      border: 1px solid rgba(231, 76, 60, 0.2);
+    }
+    
+    .bonus-actions .bonus-btns .btn-sub:hover {
+      background: rgba(231, 76, 60, 0.25);
+    }
+    
+    .bonus-actions .bonus-btns .btn-sm:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    
+    /* ===== МОДАЛЬНОЕ ОКНО ДЛЯ ОПЕРАЦИЙ ===== */
+    .modal .bonus-operation {
+      text-align: left;
+    }
+    
+    .modal .bonus-operation .client-info {
+      padding: 0.8rem 1rem;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+      border: 1px solid var(--border);
+    }
+    
+    .modal .bonus-operation .client-info .label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    
+    .modal .bonus-operation .client-info .value {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    
+    .modal .bonus-operation .client-info .value .bonus {
+      color: var(--accent);
+    }
+    
+    .modal .bonus-operation .form-group {
+      margin-bottom: 1rem;
+    }
+    
+    .modal .bonus-operation .form-group label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    
+    .modal .bonus-operation .form-group input {
+      width: 100%;
+      padding: 0.6rem 1rem;
+      border-radius: 0.5rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem;
+      transition: var(--transition);
+    }
+    
+    .modal .bonus-operation .form-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(200, 164, 92, 0.1);
+    }
+    
+    .modal .bonus-operation .result-info {
+      padding: 0.8rem 1rem;
+      border-radius: 0.5rem;
+      margin: 1rem 0;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+    
+    .modal .bonus-operation .result-info .amount {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent);
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    
+    .modal .bonus-operation .result-info .label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    
+    .modal .bonus-operation .result-info.add {
+      border-color: rgba(46, 204, 113, 0.2);
+    }
+    
+    .modal .bonus-operation .result-info.add .amount {
+      color: #2ecc71;
+    }
+    
+    .modal .bonus-operation .result-info.sub {
+      border-color: rgba(231, 76, 60, 0.2);
+    }
+    
+    .modal .bonus-operation .result-info.sub .amount {
+      color: #e74c3c;
+    }
+    
+    .modal .bonus-operation .error-msg {
+      color: #e74c3c;
+      font-size: 0.85rem;
+      text-align: center;
+      padding: 0.5rem;
+    }
+    
+    /* ===== АДАПТИВНОСТЬ ===== */
+    @media (max-width: 768px) {
+      .bonus-actions {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 1rem;
+      }
+      
+      .bonus-actions .search-wrap {
+        flex-direction: column;
+        min-width: auto;
+      }
+      
+      .bonus-actions .bonus-btns {
+        justify-content: center;
+      }
+      
+      .bonus-actions .selected-client {
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  
+  <div class="portal-wrapper">
+    <%- include('../../partials/sidebar', { activePage: '/portal/referrals', user: user }) %>
+    
+    <main class="portal-main">
+      <header class="portal-header">
+        <div class="portal-header-left">
+          <button class="mobile-sidebar-toggle" onclick="toggleSidebar()" title="Открыть меню">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+          <h1>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.5rem;">
+              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+            </svg>
+            Реферальная система
+          </h1>
+        </div>
+        <div class="portal-header-right">
+          <span class="header-date"><%= new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) %></span>
+        </div>
+      </header>
+      
+      <div class="portal-content">
+        <!-- ===== БЛОК НАЧИСЛЕНИЯ/СПИСАНИЯ ===== -->
+        <div class="bonus-actions">
+          <div class="search-wrap" style="position:relative;">
+            <input type="text" id="searchPhone" placeholder="Поиск по телефону..." autocomplete="off">
+            <div class="search-results" id="searchResults"></div>
+          </div>
+          
+          <div class="selected-client" id="selectedClient">
+            <span class="client-name" id="selectedName">—</span>
+            <span class="client-bonus">Бонусы: <span id="selectedBonus">0</span></span>
+          </div>
+          
+          <div class="bonus-btns">
+            <button class="btn btn-sm btn-add" id="btnAddBonus" disabled onclick="openBonusModal('add')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:0.2rem;">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Начислить
+            </button>
+            <button class="btn btn-sm btn-sub" id="btnSubBonus" disabled onclick="openBonusModal('sub')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:0.2rem;">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Списать
+            </button>
+          </div>
+        </div>
+        
+        <!-- ===== СПИСОК КЛИЕНТОВ ===== -->
+        <div class="module-header">
+          <h2>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            Список клиентов
+          </h2>
+          <div class="module-actions">
+            <a href="/portal/referrals/add" class="btn btn-primary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:0.3rem;">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Добавить клиента
+            </a>
+          </div>
+        </div>
+        
+        <div class="table-wrapper">
+          <% if (referrals && referrals.length > 0) { %>
+            <table>
+              <thead>
+                <tr>
+                  <th>№</th>
+                  <th>Имя</th>
+                  <th>Телефон</th>
+                  <th>Бонусы</th>
+                  <th>Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% referrals.forEach(function(referral, index) { %>
+                  <tr>
+                    <td><span class="table-id"><%= index + 1 %></span></td>
+                    <td><strong><%= referral.name %></strong></td>
+                    <td><%= referral.phone %></td>
+                    <td><span class="bonus-cell"><%= referral.bonus || 0 %></span></td>
+                    <td>
+                      <div class="table-actions">
+                        <a href="/portal/referrals/edit/<%= referral.id %>" class="btn-icon" title="Редактировать">
+                          <svg viewBox="0 0 24 24">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                          </svg>
+                        </a>
+                        <button class="btn-icon danger" onclick="deleteReferral('<%= referral.id %>')" title="Удалить">
+                          <svg viewBox="0 0 24 24">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          <% } else { %>
+            <div class="empty-state">
+              <div class="empty-icon">🎯</div>
+              <h4>Нет клиентов</h4>
+              <p>Добавьте первого клиента, нажав кнопку «Добавить клиента»</p>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </main>
+  </div>
+  
+  <!-- ===== МОДАЛЬНОЕ ОКНО ДЛЯ ОПЕРАЦИЙ ===== -->
+  <div class="modal-overlay" id="bonusModalOverlay">
+    <div class="modal">
+      <button class="modal-close" onclick="closeBonusModal()">&times;</button>
+      <h3 id="bonusModalTitle">Начисление бонусов</h3>
+      <div class="bonus-operation">
+        <div class="client-info">
+          <div class="label">Клиент</div>
+          <div class="value" id="bonusClientName">—</div>
+          <div style="margin-top:0.3rem;font-size:0.85rem;color:var(--text-secondary);">
+            Текущий баланс: <span class="bonus" id="bonusClientBalance">0</span>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="orderAmount">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+            Сумма заказа (₽)
+          </label>
+          <input type="number" id="orderAmount" placeholder="Введите сумму заказа" min="0">
+        </div>
+        
+        <div id="bonusResult" style="display:none;">
+          <div class="result-info" id="bonusResultInfo">
+            <div class="label" id="bonusResultLabel">Бонусы к начислению</div>
+            <div class="amount" id="bonusResultAmount">0</div>
+          </div>
+          <div class="error-msg" id="bonusError" style="display:none;"></div>
+        </div>
+        
+        <button class="btn btn-primary" style="width:100%;justify-content:center;" id="bonusConfirmBtn" onclick="confirmBonus()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:0.4rem;">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Подтвердить
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // ===== ПЕРЕМЕННЫЕ =====
+    let selectedClientId = null;
+    let selectedClientName = '';
+    let selectedClientBonus = 0;
+    let currentOperation = 'add'; // add или sub
+    
+    // ===== ПОИСК =====
+    const searchInput = document.getElementById('searchPhone');
+    const searchResults = document.getElementById('searchResults');
+    const selectedClient = document.getElementById('selectedClient');
+    const selectedName = document.getElementById('selectedName');
+    const selectedBonus = document.getElementById('selectedBonus');
+    const btnAdd = document.getElementById('btnAddBonus');
+    const btnSub = document.getElementById('btnSubBonus');
+    
+    let searchTimeout = null;
+    
+    searchInput.addEventListener('input', function() {
+      clearTimeout(searchTimeout);
+      const query = this.value.trim();
+      
+      if (query.length < 2) {
+        searchResults.classList.remove('active');
+        return;
+      }
+      
+      searchTimeout = setTimeout(async () => {
+        try {
+          const response = await fetch(`/api/referrals/search?phone=${encodeURIComponent(query)}`);
+          const data = await response.json();
+          
+          if (data.length === 0) {
+            searchResults.innerHTML = '<div class="result-item" style="color:var(--text-muted);justify-content:center;">Ничего не найдено</div>';
+          } else {
+            searchResults.innerHTML = data.map(r => `
+              <div class="result-item" onclick="selectClient('${r.id}', '${r.name}', ${r.bonus || 0})">
+                <span><strong>${r.name}</strong> (${r.phone})</span>
+                <span class="result-bonus">${r.bonus || 0} бонусов</span>
+              </div>
+            `).join('');
+          }
+          searchResults.classList.add('active');
+        } catch (error) {
+          console.error('Ошибка поиска:', error);
+        }
+      }, 300);
+    });
+    
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-wrap')) {
+        searchResults.classList.remove('active');
+      }
+    });
+    
+    // ===== ВЫБОР КЛИЕНТА =====
+    function selectClient(id, name, bonus) {
+      selectedClientId = id;
+      selectedClientName = name;
+      selectedClientBonus = bonus;
+      
+      selectedName.textContent = name;
+      selectedBonus.textContent = bonus;
+      selectedClient.classList.add('active');
+      searchResults.classList.remove('active');
+      searchInput.value = '';
+      
+      btnAdd.disabled = false;
+      btnSub.disabled = false;
+    }
+    
+    // ===== МОДАЛЬНОЕ ОКНО =====
+    const bonusModal = document.getElementById('bonusModalOverlay');
+    const bonusModalTitle = document.getElementById('bonusModalTitle');
+    const bonusClientName = document.getElementById('bonusClientName');
+    const bonusClientBalance = document.getElementById('bonusClientBalance');
+    const orderAmount = document.getElementById('orderAmount');
+    const bonusResult = document.getElementById('bonusResult');
+    const bonusResultInfo = document.getElementById('bonusResultInfo');
+    const bonusResultLabel = document.getElementById('bonusResultLabel');
+    const bonusResultAmount = document.getElementById('bonusResultAmount');
+    const bonusError = document.getElementById('bonusError');
+    const bonusConfirmBtn = document.getElementById('bonusConfirmBtn');
+    
+    let bonusConfirmCallback = null;
+    
+    window.openBonusModal = function(type) {
+      if (!selectedClientId) {
+        alert('Сначала выберите клиента через поиск');
+        return;
+      }
+      
+      currentOperation = type;
+      
+      if (type === 'add') {
+        bonusModalTitle.innerHTML = `
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent3)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.5rem;">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Начисление бонусов
+        `;
+        bonusResultInfo.className = 'result-info add';
+        bonusResultLabel.textContent = 'Бонусы к начислению';
+      } else {
+        bonusModalTitle.innerHTML = `
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent3)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.5rem;">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Списание бонусов
+        `;
+        bonusResultInfo.className = 'result-info sub';
+        bonusResultLabel.textContent = 'Бонусы к списанию';
+      }
+      
+      bonusClientName.textContent = selectedClientName;
+      bonusClientBalance.textContent = selectedClientBonus;
+      orderAmount.value = '';
+      bonusResult.style.display = 'none';
+      bonusError.style.display = 'none';
+      bonusConfirmBtn.disabled = false;
+      
+      bonusModal.classList.add('active');
+    };
+    
+    window.closeBonusModal = function() {
+      bonusModal.classList.remove('active');
+    };
+    bonusModal.addEventListener('click', function(e) {
+      if (e.target === bonusModal) closeBonusModal();
+    });
+    
+    // ===== ПРЕДПРОСМОТР РЕЗУЛЬТАТА =====
+    orderAmount.addEventListener('input', function() {
+      const amount = parseFloat(this.value);
+      if (!amount || amount <= 0) {
+        bonusResult.style.display = 'none';
+        return;
+      }
+      
+      if (currentOperation === 'add') {
+        // 10% от суммы заказа
+        const bonus = Math.round(amount * 0.1);
+        bonusResultAmount.textContent = bonus + ' ₽';
+        bonusResultLabel.textContent = 'Бонусы к начислению (10%)';
+        bonusResultInfo.className = 'result-info add';
+        bonusResult.style.display = 'block';
+        bonusError.style.display = 'none';
+      } else {
+        // Максимум 30% от суммы заказа
+        const maxBonus = Math.round(amount * 0.3);
+        const currentBonus = selectedClientBonus;
+        const bonus = Math.min(currentBonus, maxBonus);
+        
+        if (currentBonus === 0) {
+          bonusResult.style.display = 'block';
+          bonusError.style.display = 'block';
+          bonusError.textContent = '❌ У клиента нет бонусов для списания';
+          bonusConfirmBtn.disabled = true;
+          return;
+        }
+        
+        if (maxBonus === 0) {
+          bonusResult.style.display = 'block';
+          bonusError.style.display = 'block';
+          bonusError.textContent = '❌ Сумма заказа слишком мала (минимум 1 ₽)';
+          bonusConfirmBtn.disabled = true;
+          return;
+        }
+        
+        bonusResultAmount.textContent = bonus + ' ₽';
+        bonusResultLabel.textContent = `Максимум 30% от заказа (${maxBonus} ₽)`;
+        bonusResultInfo.className = 'result-info sub';
+        bonusResult.style.display = 'block';
+        bonusError.style.display = 'none';
+        bonusConfirmBtn.disabled = (bonus === 0);
+      }
+    });
+    
+    // ===== ПОДТВЕРЖДЕНИЕ ОПЕРАЦИИ =====
+    window.confirmBonus = function() {
+      const amount = parseFloat(orderAmount.value);
+      if (!amount || amount <= 0) {
+        alert('Введите корректную сумму заказа');
+        return;
+      }
+      
+      const endpoint = currentOperation === 'add' 
+        ? '/api/referrals/add-bonus' 
+        : '/api/referrals/subtract-bonus';
+      
+      bonusConfirmBtn.disabled = true;
+      bonusConfirmBtn.textContent = '⏳ Обработка...';
+      
+      fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: selectedClientId,
+          orderAmount: amount
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          closeBonusModal();
+          // Обновляем данные
+          selectedClientBonus = data.newBonus;
+          selectedBonus.textContent = data.newBonus;
+          // Показываем подтверждение
+          const msg = currentOperation === 'add' 
+            ? `✅ Начислено ${data.addedBonus} бонусов!`
+            : `✅ Списано ${data.subtractedBonus} бонусов!`;
+          alert(msg);
+          location.reload();
+        } else {
+          alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+          bonusConfirmBtn.disabled = false;
+          bonusConfirmBtn.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:0.4rem;">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Подтвердить
+          `;
+        }
+      })
+      .catch(error => {
+        console.error('Ошибка:', error);
+        alert('Ошибка сервера');
+        bonusConfirmBtn.disabled = false;
+        bonusConfirmBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:0.4rem;">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Подтвердить
+        `;
+      });
+    };
+    
+    // ===== УДАЛЕНИЕ =====
+    function deleteReferral(id) {
+      if (confirm('Вы уверены, что хотите удалить этого клиента?')) {
+        fetch('/portal/referrals/delete/' + id, { method: 'DELETE' })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              location.reload();
+            } else {
+              alert('Ошибка удаления');
+            }
+          })
+          .catch(() => alert('Ошибка сервера'));
+      }
+    }
+  </script>
+  
+  <script src="/js/portal.js"></script>
+</body>
+</html>
