@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="icon" type="image/x-icon" href="/ico/favicon.ico">
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .error-page {
+      min-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .error-page h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 6rem;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+    .error-page h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .error-page p {
+      color: var(--text-secondary);
+      max-width: 400px;
+      margin-bottom: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  <div class="container">
+    <%- include('../partials/header', { user: user }) %>
+    <section class="error-page">
+      <h1>404</h1>
+      <h2>Страница не найдена</h2>
+      <p>К сожалению, запрашиваемая страница не существует или была перемещена.</p>
+      <a href="/" class="btn btn-primary">Вернуться на главную</a>
+    </section>
+    <%- include('../partials/footer') %>
+  </div>
+  <script src="/js/main.js"></script>
+</body>
+</html>
