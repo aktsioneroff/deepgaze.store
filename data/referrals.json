@@ -1,0 +1,15 @@
+[
+  {
+    "id": "mrkcw6vz2rkfe",
+    "name": "Сергей",
+    "phone": "+79520009110",
+    "bonus": 0,
+    "createdAt": "2026-07-14T07:55:14.015Z",
+    "lastTransaction": {
+      "type": "subtract",
+      "amount": 1100,
+      "orderAmount": 10000,
+      "date": "2026-07-14T08:16:15.692Z"
+    }
+  }
+]
