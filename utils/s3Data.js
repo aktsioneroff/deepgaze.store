@@ -18,13 +18,11 @@ async function readData(fileName) {
         const data = await s3.downloadFromS3(key);
         
         if (data === null) {
-            // Файла нет - возвращаем пустой массив
             return [];
         }
         
         const parsed = JSON.parse(data);
         
-        // Сохраняем в кэш
         cache[key] = {
             data: parsed,
             timestamp: Date.now()
@@ -44,7 +42,6 @@ async function writeData(fileName, data) {
     try {
         await s3.uploadToS3(key, data);
         
-        // Обновляем кэш
         cache[key] = {
             data: data,
             timestamp: Date.now()
@@ -63,10 +60,7 @@ async function deleteData(fileName) {
     
     try {
         await s3.deleteFromS3(key);
-        
-        // Удаляем из кэша
         delete cache[key];
-        
         return true;
     } catch (error) {
         console.error(`Ошибка удаления ${fileName}:`, error.message);
@@ -119,7 +113,6 @@ async function migrateLocalDataToS3() {
             const filePath = path.join(localDataDir, file);
             const content = fs.readFileSync(filePath, 'utf8');
             
-            // Проверяем, есть ли файл в S3
             const exists = await s3.fileExistsInS3(`data/${file}`);
             
             if (!exists) {
