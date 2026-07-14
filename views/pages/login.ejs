@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  
+  <link rel="icon" type="image/x-icon" href="/ico/favicon.ico">
+  <link rel="apple-touch-icon" href="/ico/apple-touch-icon.png">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/css/main.css">
+  
+  <style>
+    .login-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .login-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 3rem 2.5rem;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    }
+    .login-logo {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .login-logo h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+    }
+    .login-logo h1 span { color: var(--accent); }
+    .login-logo p {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      margin-top: 0.3rem;
+    }
+    .login-error {
+      background: rgba(231, 76, 60, 0.15);
+      border: 1px solid rgba(231, 76, 60, 0.3);
+      color: #e74c3c;
+      padding: 0.7rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    .login-form .form-group {
+      margin-bottom: 1.2rem;
+    }
+    .login-form .form-group label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+    }
+    .login-form .form-group input {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      border-radius: 0.5rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      transition: var(--transition);
+    }
+    .login-form .form-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(200, 164, 92, 0.1);
+    }
+    .login-form .btn {
+      width: 100%;
+      justify-content: center;
+      padding: 0.8rem;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+    }
+    .login-footer {
+      text-align: center;
+      margin-top: 1.5rem;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+    .login-footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .login-footer a:hover { text-decoration: underline; }
+    
+    .back-to-site {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: var(--transition);
+      margin-bottom: 1.5rem;
+    }
+    .back-to-site:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  
+  <div class="login-page">
+    <div class="login-container">
+      <a href="/" class="back-to-site">← На главную</a>
+      
+      <div class="login-logo">
+        <h1>DEEP<span>.</span>GAZE</h1>
+        <p>Вход в портал сотрудников</p>
+      </div>
+      
+      <% if (error) { %>
+        <div class="login-error"><%= error %></div>
+      <% } %>
+      
+      <form action="/login" method="POST" class="login-form">
+        <div class="form-group">
+          <label>Логин</label>
+          <input type="text" name="login" placeholder="Введите логин" required autofocus>
+        </div>
+        <div class="form-group">
+          <label>Пароль</label>
+          <input type="password" name="password" placeholder="Введите пароль" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Войти в портал</button>
+      </form>
+      
+      <div class="login-footer">
+      </div>
+    </div>
+  </div>
+</body>
+</html>
