@@ -5,11 +5,44 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
-// ===== СОЗДАНИЕ ПАПОК С ПРАВАМИ =====
+// ===== ПОДКЛЮЧЕНИЕ S3 =====
+const { S3Client, HeadBucketCommand, PutObjectCommand, GetObjectCommand, HeadObjectCommand, DeleteObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
+
+// ===== КОНФИГУРАЦИЯ S3 =====
+const s3Config = {
+    endpoint: 'https://s3.twcstorage.ru',
+    region: 'ru-1',
+    credentials: {
+        accessKeyId: 'WH5JV70A76ML0WY9VWJM',
+        secretAccessKey: 'EtN37sHNRkLs5dPgJzkB2TQFUW8mSE81gDIFe8DP'
+    },
+    forcePathStyle: true
+};
+
+const BUCKET_NAME = 'b84d36c2-5e58-406e-9d3d-5754fe0dda39';
+
+// Создаем S3 клиент
+const s3Client = new S3Client(s3Config);
+let s3Connected = false;
+
+// ===== ФУНКЦИЯ ПРОВЕРКИ S3 =====
+async function testS3Connection() {
+    try {
+        await s3Client.send(new HeadBucketCommand({ Bucket: BUCKET_NAME }));
+        console.log('✅ S3 подключен успешно!');
+        s3Connected = true;
+        return true;
+    } catch (error) {
+        console.error('❌ Ошибка подключения к S3:', error.message);
+        s3Connected = false;
+        return false;
+    }
+}
+
+// ===== СОЗДАНИЕ ПАПОК =====
 const SESSIONS_DIR = path.join(__dirname, 'sessions');
 const DATA_DIR = path.join(__dirname, 'data');
 
-// Создаем папки если их нет
 [SESSIONS_DIR, DATA_DIR].forEach(dir => {
     if (!fs.existsSync(dir)) {
         try {
@@ -21,66 +54,21 @@ const DATA_DIR = path.join(__dirname, 'data');
     }
 });
 
-// ===== ПОДКЛЮЧЕНИЕ S3 =====
-let s3 = null;
-let s3Connected = false;
-let s3Data = null;
-
-try {
-    s3 = require('./config/s3');
-    s3Data = require('./utils/s3Data');
-    console.log('✅ S3 модули загружены');
-} catch (error) {
-    console.log('⚠️ S3 модули не найдены, работаем с локальным хранилищем');
-}
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ===== ИНИЦИАЛИЗАЦИЯ S3 =====
 console.log('\n📦 ===== S3 ИНИЦИАЛИЗАЦИЯ =====');
-
-if (s3) {
-    try {
-        s3.logS3Connection();
-        
-        (async () => {
-            console.log('🔍 Проверка подключения к S3...');
-            const startTime = Date.now();
-            
-            try {
-                s3Connected = await s3.testS3Connection();
-                const duration = Date.now() - startTime;
-                
-                if (s3Connected) {
-                    console.log(`✅ S3 подключен успешно (${duration}ms)`);
-                    
-                    if (s3Data) {
-                        const files = await s3Data.listDataFiles();
-                        console.log(`📁 Найдено файлов в S3: ${files.length}`);
-                        if (files.length > 0) {
-                            console.log(`  └─ Файлы: ${files.join(', ')}`);
-                        }
-                    }
-                } else {
-                    console.log(`⚠️ S3 не доступен (${duration}ms), используем локальное хранилище`);
-                    console.log('  └─ Данные будут храниться в папке data/');
-                }
-            } catch (error) {
-                console.error(`❌ Ошибка при проверке S3: ${error.message}`);
-                s3Connected = false;
-            }
-        })();
-    } catch (error) {
-        console.error('❌ Ошибка инициализации S3:', error.message);
-        s3Connected = false;
-    }
-} else {
-    console.log('📁 S3 не настроен, используем локальное хранилище');
-    console.log('  └─ Данные будут храниться в папке data/');
-}
-
+console.log(`  ├─ Endpoint: ${s3Config.endpoint}`);
+console.log(`  ├─ Bucket: ${BUCKET_NAME}`);
+console.log(`  ├─ Access Key: ${s3Config.credentials.accessKeyId.substring(0, 8)}...`);
+console.log(`  └─ Region: ${s3Config.region}`);
 console.log('📦 ============================\n');
+
+// Проверяем подключение
+(async () => {
+    await testS3Connection();
+})();
 
 // ===== НАСТРОЙКА ПРИЛОЖЕНИЯ =====
 app.set('view engine', 'ejs');
@@ -134,14 +122,48 @@ app.use('/', indexRoutes);
 
 // ===== СТАТУС S3 =====
 app.get('/api/s3-status', (req, res) => {
-    const status = {
+    res.json({
         connected: s3Connected,
         timestamp: new Date().toISOString(),
-        bucket: s3 ? s3.BUCKET_NAME : null,
-        endpoint: s3 ? s3.s3Config?.endpoint : null
-    };
-    res.json(status);
+        bucket: BUCKET_NAME,
+        endpoint: s3Config.endpoint
+    });
 });
+
+// ===== ФУНКЦИИ ДЛЯ РАБОТЫ С S3 =====
+async function uploadToS3(key, data, contentType = 'application/json') {
+    try {
+        const params = {
+            Bucket: BUCKET_NAME,
+            Key: key,
+            Body: typeof data === 'string' ? data : JSON.stringify(data, null, 2),
+            ContentType: contentType
+        };
+        await s3Client.send(new PutObjectCommand(params));
+        console.log(`✅ Файл загружен в S3: ${key}`);
+        return true;
+    } catch (error) {
+        console.error(`❌ Ошибка загрузки в S3: ${error.message}`);
+        return false;
+    }
+}
+
+async function downloadFromS3(key) {
+    try {
+        const params = { Bucket: BUCKET_NAME, Key: key };
+        const result = await s3Client.send(new GetObjectCommand(params));
+        const body = await result.Body.transformToString();
+        console.log(`✅ Файл скачан из S3: ${key}`);
+        return body;
+    } catch (error) {
+        if (error.name === 'NoSuchKey') {
+            console.log(`⚠️ Файл не найден в S3: ${key}`);
+            return null;
+        }
+        console.error(`❌ Ошибка скачивания из S3: ${error.message}`);
+        return null;
+    }
+}
 
 // ===== 404 =====
 app.use((req, res) => {
