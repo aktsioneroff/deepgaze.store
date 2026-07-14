@@ -615,7 +615,8 @@ exports.getEmployeeForm = (req, res) => {
         employee: employee,
         branches: branches,
         isEdit: !!id,
-        permissions: permissions
+        permissions: permissions,
+        isAdmin: req.session.user.role === 'admin' // <-- ДОБАВЛЯЕМ ЭТУ СТРОКУ
     });
 };
 
