@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="/ico/favicon.ico">
+  <link rel="apple-touch-icon" href="/ico/apple-touch-icon.png">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="/css/main.css">
+  
+  <style>
+    #three-container {
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      overflow: hidden;
+      box-shadow: 
+        0 0 120px rgba(200, 164, 92, 0.15),
+        0 0 60px rgba(139, 111, 207, 0.1),
+        inset 0 0 80px rgba(0,0,0,0.4);
+      position: relative;
+      background: radial-gradient(ellipse at center, #0a0814 0%, #050508 100%);
+    }
+    #three-container canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .loading-text {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      animation: pulse 1.5s ease-in-out infinite;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+    @media (max-width: 900px) {
+      #three-container {
+        width: 280px;
+        height: 280px;
+      }
+    }
+    @media (max-width: 480px) {
+      #three-container {
+        width: 220px;
+        height: 220px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+
+  <div class="container">
+    <!-- ========== HEADER ========== -->
+    <%- include('../partials/header', { user: user }) %>
+
+    <!-- ========== HERO ========== -->
+    <section class="hero">
+      <div class="hero-content">
+        <h1><span class="line">Глубина</span><span class="line accent">человеческого</span><span class="line">взгляда</span></h1>
+        <p>Профессиональная макросъёмка радужки глаза. Каждый снимок — уникальный узор, словно отпечаток души.</p>
+        <button class="btn btn-primary" onclick="document.getElementById('booking').scrollIntoView({behavior:'smooth'})">Записаться на съёмку →</button>
+      </div>
+      <div class="hero-visual">
+        <div id="three-container">
+          <div class="loading-text">Загрузка 3D...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== УСЛУГИ ========== -->
+    <section class="section" id="services">
+      <div class="section-header"><span class="badge">Услуги</span><h2>Каталог съёмки</h2></div>
+      <div class="catalog-grid" id="catalogGrid">
+        <!-- Загружается через JavaScript -->
+      </div>
+      <div class="show-more-wrapper"><button class="btn btn-outline" id="showMoreBtn" onclick="toggleCatalog()">Показать ещё</button></div>
+    </section>
+
+    <!-- ========== ПОРТФОЛИО ========== -->
+    <section class="section" id="portfolio">
+      <div class="section-header"><span class="badge">Портфолио</span><h2>Избранные работы</h2></div>
+      <div class="portfolio-grid">
+        <!-- Загружается через JavaScript -->
+      </div>
+    </section>
+
+    <!-- ========== ПАРТНЁРЫ ========== -->
+    <section class="section" id="trusted">
+      <div class="section-header"><span class="badge">Партнёры</span><h2>Нам доверяют</h2></div>
+      <div class="trusted-grid" id="partnersGrid">
+        <div style="text-align:center;width:100%;color:var(--text-muted);font-size:0.85rem;">Загрузка партнёров...</div>
+      </div>
+    </section>
+
+    <!-- ========== ЛОЯЛЬНОСТЬ ========== -->
+    <section class="section" id="loyalty">
+      <div class="section-header"><span class="badge">Лояльность</span><h2>Приведи друга</h2></div>
+      <div class="referral-block">
+        <div class="referral-info">
+          <h3>Реферальная программа</h3>
+          <p style="color:var(--text-secondary);margin-bottom:1.5rem;">Делитесь впечатлениями и получайте бонусы. Назовите ваше имя при записи друга.</p>
+          <ul>
+            <li>Друг получает <span class="highlight">скидку 10%</span> на первую съёмку</li>
+            <li>Вам — <span class="highlight">10% бонусов</span> от стоимости его заказа</li>
+            <li>Бонусами оплачивается <span class="highlight">до 30%</span> заказа</li>
+            <li>Бонусы <span class="highlight">не сгорают</span></li>
+          </ul>
+        </div>
+        <div class="referral-visual">
+          <div class="big-percent">10%</div>
+          <div class="sub">скидка другу</div>
+          <div style="margin:1.5rem 0;font-family:'Space Grotesk',sans-serif;font-size:1.2rem;color:var(--accent2);">+10% бонусов вам</div>
+          <div class="bonus-bar"><div class="bonus-bar-fill" id="bonusBar" style="width:0%;"></div></div>
+          <div class="sub" style="margin-top:0.5rem;">до 30% от стоимости заказа</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== КОНТАКТЫ ========== -->
+    <section class="section" id="location">
+      <div class="section-header"><span class="badge">Контакты</span><h2>Как нас найти</h2></div>
+      <div class="map-wrapper">
+        <iframe src="https://yandex.ru/map-widget/v1/?um=constructor%3A5727218475d31023d75dcac3a7e421bcc76474db71935f594084f760616f4d59&amp;source=constructor" width="100%" height="400" frameborder="0"></iframe>
+      </div>
+      <div class="contacts-grid">
+        <div class="contact-card">
+          <div class="contact-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+          <h4>Адрес</h4><p>г. Барнаул, пр-т Строителей, 117<br>3 этаж, офис 310/3</p>
+        </div>
+        <div class="contact-card">
+          <div class="contact-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          <h4>Часы работы</h4><p>Пн–Пт: 12:00 – 18:00<br>Сб–Вс: 12:00 – 19:00</p>
+        </div>
+        <div class="contact-card">
+          <div class="contact-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+          <h4>Телефон</h4><p><a href="tel:+79991234567">+7 (999) 123-45-67</a></p>
+        </div>
+        <div class="contact-card">
+          <div class="contact-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+          <h4>Email & Telegram</h4><p><a href="mailto:hello@deepgaze.ru">hello@deepgaze.store</a><br><a href="https://t.me/deep_gaze">@deep_gaze</a></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== ЗАПИСЬ ========== -->
+    <section class="section" id="booking">
+      <div class="section-header"><span class="badge">Запись</span><h2>Выберите дату</h2></div>
+      <div class="booking-wrapper">
+        <div>
+          <div class="calendar-grid" id="calGrid"></div>
+          <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.8rem;text-align:center;">Выберите дату, затем «Выбрать время»</p>
+        </div>
+        <div class="booking-summary">
+          <div>
+            <div class="summary-label">Дата</div>
+            <div class="summary-value" id="sumDate">—</div>
+          </div>
+          <div>
+            <div class="summary-label">Время</div>
+            <div class="summary-value" id="sumTime">—</div>
+          </div>
+          <div>
+            <div class="summary-label">Услуга</div>
+            <div class="summary-value" id="sumService" style="font-size:0.9rem;color:var(--text-secondary);">—</div>
+          </div>
+          <button class="btn btn-primary" id="openTimeModalBtn" disabled onclick="openTimeModal()">Выбрать время</button>
+          <p style="font-size:0.65rem;color:var(--text-muted);">Слоты с 12:00 до 19:00 • шаг 20 мин</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== FOOTER ========== -->
+    <%- include('../partials/footer') %>
+  </div>
+
+  <!-- ========== FULLSCREEN MODAL ========== -->
+  <div class="fullscreen-overlay" id="fullscreenOverlay" onclick="closeFullscreen()">
+    <button class="fullscreen-close" onclick="closeFullscreen()">&times;</button>
+    <img id="fullscreenImage" src="" alt="Полноэкранный просмотр">
+  </div>
+
+  <!-- ========== MAIN MODAL ========== -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+      <h3 id="modalTitle"></h3>
+      <div id="modalDesc"></div>
+      <div id="modalExtra"></div>
+      <button class="btn btn-primary" id="modalBtn">Понятно</button>
+    </div>
+  </div>
+
+  <!-- ========== TIME MODAL ========== -->
+  <div class="modal-overlay" id="timeModalOverlay">
+    <div class="modal">
+      <button class="modal-close" onclick="closeTimeModal()">&times;</button>
+      <h3>Выберите время</h3>
+      <p style="color:var(--text-secondary);font-size:0.8rem;" id="timeModalDate"></p>
+      <div class="time-grid" id="timeGrid"></div>
+      <button class="btn btn-primary" id="confirmTimeBtn" disabled onclick="confirmTime()">Подтвердить время</button>
+    </div>
+  </div>
+
+  <!-- ========== BOOKING FORM MODAL ========== -->
+  <div class="modal-overlay" id="bookingFormOverlay">
+    <div class="modal">
+      <button class="modal-close" onclick="closeBookingForm()">&times;</button>
+      
+      <h3>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.5rem;">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/>
+          <polyline points="7 3 7 8 15 8"/>
+        </svg>
+        Завершите запись
+      </h3>
+      
+      <div id="bookingFormInfo" style="color:var(--text-secondary);font-size:0.85rem;"></div>
+      
+      <div style="margin:1rem 0;text-align:left;">
+        <div class="form-group">
+          <label>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            Ваше имя
+          </label>
+          <input type="text" id="clientName" placeholder="Иван Петров">
+        </div>
+        
+        <div class="form-group">
+          <label>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+            Телефон
+          </label>
+          <input type="tel" id="clientPhone" placeholder="+7 (999) 123-45-67">
+        </div>
+        
+        <div class="form-group">
+          <label>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+            </svg>
+            Услуга
+          </label>
+          <select id="bookingService">
+            <option value="">Выберите услугу</option>
+          </select>
+        </div>
+      </div>
+      
+      <button class="btn btn-primary" style="width:100%;justify-content:center;font-size:1rem;padding:0.8rem;" onclick="submitBooking()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:0.4rem;">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        Подтвердить запись
+      </button>
+    </div>
+  </div>
+
+  <!-- ========== LOGIN MODAL ========== -->
+  <div class="modal-overlay" id="loginModalOverlay">
+    <div class="modal">
+      <button class="modal-close" onclick="closeLoginModal()">&times;</button>
+      <h3>Личный кабинет</h3>
+      <p style="color:var(--text-secondary);font-size:0.85rem;">Войдите, чтобы отслеживать записи и бонусы.</p>
+      <form action="/login" method="POST">
+        <div class="form-group"><label>Логин</label><input type="text" name="login" placeholder="admin" required></div>
+        <div class="form-group"><label>Пароль</label><input type="password" name="password" placeholder="••••••••" required></div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">Войти</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Three.js через CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  
+  <script>
+    console.log('🚀 Запуск 3D шара...');
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const container = document.getElementById('three-container');
+      if (!container) {
+        console.error('❌ Контейнер не найден');
+        return;
+      }
+
+      const loadingText = container.querySelector('.loading-text');
+      if (loadingText) loadingText.remove();
+
+      if (typeof THREE === 'undefined') {
+        console.error('❌ THREE не загружен!');
+        container.innerHTML = '<div style="color:var(--accent);text-align:center;">⚠️ Ошибка загрузки 3D</div>';
+        return;
+      }
+
+      console.log('✅ THREE загружен!');
+
+      const width = container.clientWidth || 420;
+      const height = container.clientHeight || 420;
+
+      try {
+        const scene = new THREE.Scene();
+        scene.background = null;
+        
+        const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 1000);
+        camera.position.set(0, 0, 5);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({
+          antialias: true,
+          alpha: true
+        });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(0x000000, 0);
+        container.appendChild(renderer.domElement);
+
+        // ===== ОСВЕЩЕНИЕ =====
+        const ambient = new THREE.AmbientLight(0x333355, 0.5);
+        scene.add(ambient);
+
+        const light1 = new THREE.DirectionalLight(0xffdd88, 1.5);
+        light1.position.set(2, 3, 4);
+        scene.add(light1);
+
+        const light2 = new THREE.DirectionalLight(0x4488ff, 0.8);
+        light2.position.set(-3, 1, 3);
+        scene.add(light2);
+
+        const light3 = new THREE.DirectionalLight(0x8844ff, 0.5);
+        light3.position.set(-2, -2, -3);
+        scene.add(light3);
+
+        // ===== ГРУППА =====
+        const group = new THREE.Group();
+        scene.add(group);
+
+        // ===== БЕЛАЯ СФЕРА =====
+        const sphereGeo = new THREE.SphereGeometry(1.5, 64, 64);
+        const sphereMat = new THREE.MeshPhysicalMaterial({
+          color: 0xf5f7fa,
+          roughness: 0.08,
+          metalness: 0.0,
+          clearcoat: 0.3,
+          clearcoatRoughness: 0.1,
+        });
+        const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+        group.add(sphere);
+
+        // ===== ЧАСТИЦЫ НА ПОВЕРХНОСТИ ШАРА =====
+        const particleCount = 300;
+        const pGeo = new THREE.BufferGeometry();
+        const pPos = new Float32Array(particleCount * 3);
+        const pColors = new Float32Array(particleCount * 3);
+        const pSizes = new Float32Array(particleCount);
+
+        const colors = [
+          [1.0, 0.8, 0.2], [0.0, 0.9, 0.8], [0.7, 0.4, 1.0],
+          [0.2, 0.5, 1.0], [1.0, 0.5, 0.0], [1.0, 0.3, 0.5]
+        ];
+
+        for (let i = 0; i < particleCount; i++) {
+          // Распределение по поверхности сферы
+          const theta = Math.random() * Math.PI * 2;
+          const phi = Math.acos(2 * Math.random() - 1);
+          const radius = 1.5 + (Math.random() - 0.5) * 0.05;
+          
+          pPos[i * 3] = Math.sin(phi) * Math.cos(theta) * radius;
+          pPos[i * 3 + 1] = Math.sin(phi) * Math.sin(theta) * radius;
+          pPos[i * 3 + 2] = Math.cos(phi) * radius;
+          
+          pSizes[i] = 0.03 + Math.random() * 0.05;
+          
+          const c = colors[Math.floor(Math.random() * colors.length)];
+          pColors[i * 3] = c[0];
+          pColors[i * 3 + 1] = c[1];
+          pColors[i * 3 + 2] = c[2];
+        }
+
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        pGeo.setAttribute('color', new THREE.BufferAttribute(pColors, 3));
+        pGeo.setAttribute('size', new THREE.BufferAttribute(pSizes, 1));
+
+        const pMat = new THREE.PointsMaterial({
+          size: 0.06,
+          blending: THREE.AdditiveBlending,
+          transparent: true,
+          opacity: 0.9,
+          sizeAttenuation: true,
+          vertexColors: true,
+        });
+        const particles = new THREE.Points(pGeo, pMat);
+        group.add(particles);
+
+        // ===== СВЕЧЕНИЕ =====
+        const glowGeo = new THREE.SphereGeometry(1.7, 32, 32);
+        const glowMat = new THREE.MeshBasicMaterial({
+          color: 0xc8a45c,
+          transparent: true,
+          opacity: 0.04,
+          blending: THREE.AdditiveBlending,
+        });
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        group.add(glow);
+
+        // ===== АНИМАЦИЯ =====
+        let time = 0;
+
+        function animate() {
+          requestAnimationFrame(animate);
+          time += 0.005;
+
+          // Простое вращение шара
+          group.rotation.y += 0.005;
+          group.rotation.x = Math.sin(time * 0.3) * 0.1;
+          group.rotation.z = Math.sin(time * 0.2) * 0.05;
+
+          // Пульсация свечения
+          const pulse = Math.sin(time * 1.5) * 0.5 + 0.5;
+          glowMat.opacity = 0.03 + pulse * 0.025;
+
+          // Меняем цвета света для перелива
+          const hue = Math.sin(time * 0.15) * 0.15 + 0.5;
+          light1.color.setHSL(hue * 0.1 + 0.05, 0.7, 0.7);
+          light2.color.setHSL(hue * 0.1 + 0.6, 0.7, 0.5);
+
+          renderer.render(scene, camera);
+        }
+
+        animate();
+
+        function resize() {
+          const w = container.clientWidth;
+          const h = container.clientHeight;
+          if (w > 0 && h > 0) {
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+          }
+        }
+
+        window.addEventListener('resize', resize);
+        setTimeout(resize, 100);
+
+        console.log('✅ 3D шар с частицами создан!');
+
+      } catch (error) {
+        console.error('❌ Ошибка:', error);
+        container.innerHTML = '<div style="color:var(--accent);text-align:center;">⚠️ Ошибка 3D</div>';
+      }
+    });
+  </script>
+
+  <!-- Main JS -->
+  <script src="/js/main.js"></script>
+</body>
+</html>
