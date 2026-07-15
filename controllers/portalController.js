@@ -931,7 +931,6 @@ exports.getChecks = async (req, res) => {
     const services = await readData(SERVICES_FILE);
     const permissions = getUserPermissions(req.session.user);
     
-    // Добавляем имя сотрудника и название услуги
     const checksWithInfo = checks.map(check => {
         const employee = employees.find(e => e.id === check.employeeId);
         const service = services.find(s => s.id === check.serviceId);
@@ -942,6 +941,9 @@ exports.getChecks = async (req, res) => {
             servicePrice: service ? service.price : '0 ₽'
         };
     });
+    
+    // Сортируем по дате (сначала новые)
+    checksWithInfo.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     
     res.render('pages/checks/index', {
         title: 'Чеки — DEEP GAZE',
@@ -960,7 +962,6 @@ exports.getCheckForm = async (req, res) => {
     const permissions = getUserPermissions(req.session.user);
     const employees = await readData(EMPLOYEES_FILE);
     
-    // Находим текущего сотрудника
     const currentEmployee = employees.find(e => e.id === req.session.user.employeeId);
     
     if (id) {
@@ -986,17 +987,14 @@ exports.saveCheck = async (req, res) => {
     const employees = await readData(EMPLOYEES_FILE);
     const services = await readData(SERVICES_FILE);
     
-    // Находим текущего сотрудника
     const employee = employees.find(e => e.id === req.session.user.employeeId);
     const service = services.find(s => s.id === serviceId);
     
-    // Вычисляем итоговую сумму
     const originalPrice = parseFloat(price) || 0;
     const discountPercent = parseFloat(discount) || 0;
     const finalPrice = originalPrice - (originalPrice * discountPercent / 100);
     
     if (id) {
-        // Редактирование
         const index = checks.findIndex(c => c.id === id);
         if (index !== -1) {
             checks[index] = { 
@@ -1012,7 +1010,6 @@ exports.saveCheck = async (req, res) => {
             };
         }
     } else {
-        // Создание нового чека
         const newCheck = {
             id: generateId(),
             employeeId: req.session.user.employeeId,
@@ -1045,39 +1042,6 @@ exports.deleteCheck = async (req, res) => {
     res.json({ success: true });
 };
 
-exports.viewCheck = async (req, res) => {
-    const id = req.params.id;
-    const checks = await readData(CHECKS_FILE);
-    const employees = await readData(EMPLOYEES_FILE);
-    const services = await readData(SERVICES_FILE);
-    
-    const check = checks.find(c => c.id === id);
-    if (!check) {
-        return res.status(404).render('pages/404', {
-            title: 'Чек не найден',
-            user: req.session.user
-        });
-    }
-    
-    const employee = employees.find(e => e.id === check.employeeId);
-    const service = services.find(s => s.id === check.serviceId);
-    
-    const checkWithInfo = {
-        ...check,
-        employeeName: employee ? employee.fullName : 'Неизвестно',
-        employeePosition: employee ? employee.position : 'Сотрудник',
-        serviceName: service ? service.name : 'Не указана'
-    };
-    
-    res.render('pages/checks/view', {
-        title: `Чек №${check.checkNumber} — DEEP GAZE`,
-        user: req.session.user,
-        activePage: '/checks',
-        check: checkWithInfo,
-        shortId: shortId
-    });
-};
-
 exports.generatePDF = async (req, res) => {
     const id = req.params.id;
     const checks = await readData(CHECKS_FILE);
@@ -1099,9 +1063,7 @@ exports.generatePDF = async (req, res) => {
         serviceName: service ? service.name : 'Не указана'
     };
     
-    // Генерируем HTML для PDF
     const html = generateCheckHTML(checkData);
-    
     res.setHeader('Content-Type', 'text/html');
     res.send(html);
 };
@@ -1117,6 +1079,10 @@ function generateCheckHTML(check) {
         hour: '2-digit',
         minute: '2-digit'
     });
+    
+    // Подписи вставляются пустыми
+    const employeeSignature = check.employeeName || '_________________';
+    const clientSignature = check.clientName || '_________________';
     
     return `
 <!DOCTYPE html>
@@ -1329,12 +1295,12 @@ function generateCheckHTML(check) {
             <div class="check-footer">
                 <div class="check-signatures">
                     <div class="signature-block">
-                        <div class="signature-name">${check.employeeName}</div>
+                        <div class="signature-name">${employeeSignature}</div>
                         <div class="signature-line"></div>
                         <div class="signature-label">Подпись сотрудника</div>
                     </div>
                     <div class="signature-block">
-                        <div class="signature-name">${check.clientName}</div>
+                        <div class="signature-name">${clientSignature}</div>
                         <div class="signature-line"></div>
                         <div class="signature-label">Подпись клиента</div>
                     </div>
