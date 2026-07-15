@@ -70,7 +70,7 @@ async function writeS3(key, data) {
     }
 }
 
-// ===== ФУНКЦИИ ДЛЯ ДАННЫХ =====
+// ===== ЭКСПОРТ ФУНКЦИЙ ДЛЯ ДРУГИХ МОДУЛЕЙ =====
 async function readData(fileName) {
     const data = await readS3(`data/${fileName}`);
     if (data) {
@@ -167,3 +167,12 @@ app.listen(PORT, () => {
     console.log(`📌 S3: ${s3Connected ? '✅ Подключен' : '❌ Недоступен'}`);
     console.log('📌 Войдите под admin / admin123');
 });
+
+// ===== ЭКСПОРТ ФУНКЦИЙ =====
+module.exports = {
+    readData,
+    writeData,
+    s3Connected,
+    BUCKET_NAME,
+    s3Config
+};
