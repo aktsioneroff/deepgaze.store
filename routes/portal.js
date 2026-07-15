@@ -13,20 +13,14 @@ router.get('/', portalController.getIndex);
 // ===== ДАШБОРД =====
 router.get('/dashboard', portalController.requireAuth, portalController.getDashboard);
 
-// ===== ЗАГЛУШКА ДЛЯ ПОРТАЛА =====
-router.get('/portal/*', portalController.requireAuth, portalController.getPlaceholder);
-
 // ============================================================
-// ===== РЕФЕРАЛЬНАЯ СИСТЕМА ===================================
+// ===== СОТРУДНИКИ ============================================
 // ============================================================
-router.get('/portal/referrals', portalController.requireAuth, portalController.getReferrals);
-router.get('/portal/referrals/new', portalController.requireAuth, portalController.getReferralForm);
-router.get('/portal/referrals/:id/edit', portalController.requireAuth, portalController.getReferralForm);
-router.post('/portal/referrals/save', portalController.requireAuth, portalController.saveReferral);
-router.delete('/portal/referrals/:id', portalController.requireAuth, portalController.deleteReferral);
-router.get('/portal/referrals/search', portalController.requireAuth, portalController.searchReferral);
-router.post('/portal/referrals/add-bonus', portalController.requireAuth, portalController.addBonus);
-router.post('/portal/referrals/subtract-bonus', portalController.requireAuth, portalController.subtractBonus);
+router.get('/employees', portalController.requireAuth, portalController.getEmployees);
+router.get('/employees/new', portalController.requireAuth, portalController.getEmployeeForm);
+router.get('/employees/:id/edit', portalController.requireAuth, portalController.getEmployeeForm);
+router.post('/employees/save', portalController.requireAuth, portalController.saveEmployee);
+router.delete('/employees/:id', portalController.requireAuth, portalController.deleteEmployee);
 
 // ============================================================
 // ===== ЗАЯВКИ ================================================
@@ -75,13 +69,16 @@ router.post('/branches/save', portalController.requireAuth, portalController.sav
 router.delete('/branches/:id', portalController.requireAuth, portalController.deleteBranch);
 
 // ============================================================
-// ===== СОТРУДНИКИ ============================================
+// ===== РЕФЕРАЛЫ ==============================================
 // ============================================================
-router.get('/employees', portalController.requireAuth, portalController.getEmployees);
-router.get('/employees/new', portalController.requireAuth, portalController.getEmployeeForm);
-router.get('/employees/:id/edit', portalController.requireAuth, portalController.getEmployeeForm);
-router.post('/employees/save', portalController.requireAuth, portalController.saveEmployee);
-router.delete('/employees/:id', portalController.requireAuth, portalController.deleteEmployee);
+router.get('/portal/referrals', portalController.requireAuth, portalController.getReferrals);
+router.get('/portal/referrals/new', portalController.requireAuth, portalController.getReferralForm);
+router.get('/portal/referrals/:id/edit', portalController.requireAuth, portalController.getReferralForm);
+router.post('/portal/referrals/save', portalController.requireAuth, portalController.saveReferral);
+router.delete('/portal/referrals/:id', portalController.requireAuth, portalController.deleteReferral);
+router.get('/portal/referrals/search', portalController.requireAuth, portalController.searchReferral);
+router.post('/portal/referrals/add-bonus', portalController.requireAuth, portalController.addBonus);
+router.post('/portal/referrals/subtract-bonus', portalController.requireAuth, portalController.subtractBonus);
 
 // ============================================================
 // ===== ЧЕКИ ==================================================
@@ -91,5 +88,8 @@ router.get('/checks/new', portalController.requireAuth, portalController.getChec
 router.get('/checks/:id/edit', portalController.requireAuth, portalController.getCheckForm);
 router.post('/checks/save', portalController.requireAuth, portalController.saveCheck);
 router.delete('/checks/:id', portalController.requireAuth, portalController.deleteCheck);
+
+// ===== ЗАГЛУШКА =====
+router.get('/portal/*', portalController.requireAuth, portalController.getPlaceholder);
 
 module.exports = router;
