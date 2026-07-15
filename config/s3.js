@@ -38,7 +38,7 @@ async function testS3Connection() {
 // ===== ФУНКЦИИ ДЛЯ РАБОТЫ С S3 =====
 async function uploadToS3(key, data, contentType = 'application/json') {
     if (!s3Connected) {
-        console.log(`⚠️ S3 не доступен, пропускаем загрузку: ${key}`);
+        console.log(`⚠️ S3 не доступен, данные НЕ СОХРАНЕНЫ: ${key}`);
         return false;
     }
     try {
@@ -48,32 +48,34 @@ async function uploadToS3(key, data, contentType = 'application/json') {
             Body: typeof data === 'string' ? data : JSON.stringify(data, null, 2),
             ContentType: contentType
         };
-        await s3Client.send(new PutObjectCommand(params));
-        console.log(`✅ Файл загружен в S3: ${key}`);
+        const result = await s3Client.send(new PutObjectCommand(params));
+        console.log(`✅ Файл загружен в S3: ${key} (ETag: ${result.ETag})`);
         return true;
     } catch (error) {
         console.error(`❌ Ошибка загрузки в S3: ${error.message}`);
+        console.error(`  └─ Key: ${key}`);
         return false;
     }
 }
 
 async function downloadFromS3(key) {
     if (!s3Connected) {
-        console.log(`⚠️ S3 не доступен, пропускаем скачивание: ${key}`);
+        console.log(`⚠️ S3 не доступен: ${key}`);
         return null;
     }
     try {
         const params = { Bucket: BUCKET_NAME, Key: key };
         const result = await s3Client.send(new GetObjectCommand(params));
         const body = await result.Body.transformToString();
-        console.log(`✅ Файл скачан из S3: ${key}`);
+        console.log(`✅ Файл скачан из S3: ${key} (${body.length} байт)`);
         return body;
     } catch (error) {
         if (error.name === 'NoSuchKey') {
-            console.log(`⚠️ Файл не найден в S3: ${key}`);
+            console.log(`📄 Файл не найден в S3: ${key} (будет создан при первом сохранении)`);
             return null;
         }
         console.error(`❌ Ошибка скачивания из S3: ${error.message}`);
+        console.error(`  └─ Key: ${key}`);
         return null;
     }
 }
@@ -97,19 +99,26 @@ async function deleteFromS3(key) {
 }
 
 async function listS3Files(prefix = '') {
+    if (!s3Connected) {
+        console.log(`⚠️ S3 не доступен`);
+        return [];
+    }
     try {
         const params = {
             Bucket: BUCKET_NAME,
             Prefix: prefix
         };
         const result = await s3Client.send(new ListObjectsV2Command(params));
-        return result.Contents ? result.Contents.map(item => item.Key) : [];
+        const files = result.Contents ? result.Contents.map(item => item.Key) : [];
+        console.log(`📁 Список файлов в S3 (${prefix}): ${files.length} файлов`);
+        return files;
     } catch (error) {
         console.error('❌ Ошибка получения списка файлов:', error.message);
         return [];
     }
 }
 
+// ===== ЭКСПОРТ =====
 module.exports = {
     s3Client,
     s3Config,
