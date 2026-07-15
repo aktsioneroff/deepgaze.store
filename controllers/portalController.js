@@ -1,6 +1,68 @@
 const fs = require('fs');
 const path = require('path');
-const { readData, writeData } = require('../server');
+
+// ===== ПРЯМОЕ ПОДКЛЮЧЕНИЕ S3 =====
+const { S3Client, HeadBucketCommand, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+
+const s3Config = {
+    endpoint: 'https://s3.twcstorage.ru',
+    region: 'ru-1',
+    credentials: {
+        accessKeyId: 'WH5JV70A76ML0WY9VWJM',
+        secretAccessKey: 'EtN37sHNRkLs5dPgJzkB2TQFUW8mSE81gDIFe8DP'
+    },
+    forcePathStyle: true
+};
+
+const BUCKET_NAME = 'b84d36c2-5e58-406e-9d3d-5754fe0dda39';
+const s3Client = new S3Client(s3Config);
+
+async function readS3(key) {
+    try {
+        const result = await s3Client.send(new GetObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: key
+        }));
+        const body = await result.Body.transformToString();
+        return JSON.parse(body);
+    } catch (error) {
+        if (error.name === 'NoSuchKey') return null;
+        return null;
+    }
+}
+
+async function writeS3(key, data) {
+    try {
+        await s3Client.send(new PutObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: key,
+            Body: JSON.stringify(data, null, 2),
+            ContentType: 'application/json'
+        }));
+        return true;
+    } catch (error) {
+        console.error('Ошибка записи S3:', error.message);
+        return false;
+    }
+}
+
+async function readData(fileName) {
+    const data = await readS3(`data/${fileName}`);
+    if (data) {
+        console.log(`📖 Загружено: ${fileName}`);
+        return data;
+    }
+    console.log(`📄 Новый файл: ${fileName}`);
+    return [];
+}
+
+async function writeData(fileName, data) {
+    const result = await writeS3(`data/${fileName}`, data);
+    if (result) {
+        console.log(`💾 Сохранено: ${fileName}`);
+    }
+    return result;
+}
 
 // ===== КОНСТАНТЫ =====
 const BRANCHES_FILE = 'branches.json';
@@ -10,14 +72,14 @@ const PORTFOLIO_FILE = 'portfolio.json';
 const SERVICES_FILE = 'services.json';
 const REQUESTS_FILE = 'requests.json';
 const REFERRALS_FILE = 'referrals.json';
-const CHECKS_FILE = 'checks.json';
+const CHECKS_FILE = 'checks.json'; // ДОБАВЛЕНО
 
 function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
 }
 
 function shortId(id) {
-    return id ? id.substr(0, 8) : '';
+    return id.substr(0, 8);
 }
 
 // ===== ПРАВА ДОСТУПА =====
@@ -32,7 +94,7 @@ function getUserPermissions(user) {
             branches: { view: true, create: true, edit: true, delete: true },
             employees: { view: true, create: true, edit: true, delete: true },
             referrals: { view: true, create: true, edit: true, delete: true },
-            checks: { view: true, create: true, edit: true, delete: true }
+            checks: { view: true, create: true, edit: true, delete: true } // ДОБАВЛЕНО
         };
     }
     
@@ -45,7 +107,7 @@ function getUserPermissions(user) {
             branches: { view: false, create: false, edit: false, delete: false },
             employees: { view: false, create: false, edit: false, delete: false },
             referrals: { view: true, create: true, edit: true, delete: true },
-            checks: { view: true, create: true, edit: true, delete: true }
+            checks: { view: true, create: true, edit: true, delete: true } // ДОБАВЛЕНО
         },
         'Фотограф': {
             requests: { view: true, create: true, edit: true, delete: true },
@@ -55,7 +117,7 @@ function getUserPermissions(user) {
             branches: { view: false, create: false, edit: false, delete: false },
             employees: { view: false, create: false, edit: false, delete: false },
             referrals: { view: true, create: true, edit: true, delete: true },
-            checks: { view: true, create: true, edit: true, delete: true }
+            checks: { view: true, create: true, edit: true, delete: true } // ДОБАВЛЕНО
         },
         'Фотограф, старший': {
             requests: { view: true, create: true, edit: true, delete: true },
@@ -65,7 +127,7 @@ function getUserPermissions(user) {
             branches: { view: false, create: false, edit: false, delete: false },
             employees: { view: false, create: false, edit: false, delete: false },
             referrals: { view: true, create: true, edit: true, delete: true },
-            checks: { view: true, create: true, edit: true, delete: true }
+            checks: { view: true, create: true, edit: true, delete: true } // ДОБАВЛЕНО
         },
         'Управляющий': {
             requests: { view: true, create: true, edit: true, delete: true },
@@ -75,7 +137,7 @@ function getUserPermissions(user) {
             branches: { view: false, create: false, edit: false, delete: false },
             employees: { view: false, create: false, edit: false, delete: false },
             referrals: { view: true, create: true, edit: true, delete: true },
-            checks: { view: true, create: true, edit: true, delete: true }
+            checks: { view: true, create: true, edit: true, delete: true } // ДОБАВЛЕНО
         },
         'Директор': {
             requests: { view: true, create: true, edit: true, delete: true },
@@ -85,7 +147,7 @@ function getUserPermissions(user) {
             branches: { view: false, create: false, edit: false, delete: false },
             employees: { view: true, create: true, edit: true, delete: true },
             referrals: { view: true, create: true, edit: true, delete: true },
-            checks: { view: true, create: true, edit: true, delete: true }
+            checks: { view: true, create: true, edit: true, delete: true } // ДОБАВЛЕНО
         },
         'Генеральный директор': {
             requests: { view: true, create: true, edit: true, delete: true },
@@ -95,110 +157,85 @@ function getUserPermissions(user) {
             branches: { view: true, create: true, edit: true, delete: true },
             employees: { view: true, create: true, edit: true, delete: true },
             referrals: { view: true, create: true, edit: true, delete: true },
-            checks: { view: true, create: true, edit: true, delete: true }
+            checks: { view: true, create: true, edit: true, delete: true } // ДОБАВЛЕНО
         }
     };
     
     return rolePermissions[user.position] || null;
 }
 
-// ===== АВТОРИЗАЦИЯ =====
-exports.getLogin = (req, res) => {
-    if (req.session.user) {
-        return res.redirect('/dashboard');
-    }
-    res.render('pages/login', {
-        title: 'Вход в портал — DEEP GAZE',
-        error: req.query.error || null
-    });
-};
-
-exports.login = async (req, res) => {
-    const { login, password } = req.body;
-    
-    if (login === 'admin' && password === 'admin123') {
-        req.session.user = {
-            login: 'admin',
-            name: 'Администратор',
-            role: 'admin',
-            position: 'Администратор'
-        };
-        return res.redirect('/dashboard');
-    }
-    
-    const employees = await readData(EMPLOYEES_FILE);
-    const employee = employees.find(e => e.login === login && e.password === password);
-    if (employee) {
-        let role = 'user';
-        if (employee.position === 'Генеральный директор' || employee.position === 'Директор') {
-            role = 'admin';
-        }
-        req.session.user = {
-            login: employee.login,
-            name: employee.fullName,
-            role: role,
-            position: employee.position,
-            employeeId: employee.id,
-            branchId: employee.branchId
-        };
-        return res.redirect('/dashboard');
-    }
-    
-    res.redirect('/login?error=Неверный логин или пароль');
-};
-
-exports.logout = (req, res) => {
-    req.session.destroy(() => {
-        res.redirect('/');
-    });
-};
-
-exports.requireAuth = (req, res, next) => {
-    if (req.session.user) {
-        next();
-    } else {
-        res.redirect('/login?error=Требуется авторизация');
-    }
-};
-
-// ===== ГЛАВНАЯ =====
-exports.getIndex = async (req, res) => {
-    res.render('pages/index', {
-        title: 'DEEP GAZE — Студия макросъемки радужки глаза',
-        user: req.session.user || null,
-        error: null
-    });
-};
-
 // ===== ДАШБОРД =====
 exports.getDashboard = async (req, res) => {
+    const requests = await readData(REQUESTS_FILE);
     const permissions = getUserPermissions(req.session.user);
+    
+    let userBranchId = null;
+    let filteredRequests = requests;
+    
+    if (req.session.user.role !== 'admin' && req.session.user.branchId) {
+        userBranchId = req.session.user.branchId;
+        filteredRequests = requests.filter(r => r.branchId === userBranchId);
+    }
+    
+    const newCount = filteredRequests.filter(r => r.status === 'Новая').length;
+    const activeCount = filteredRequests.filter(r => r.status === 'В обработке').length;
+    const completedCount = filteredRequests.filter(r => r.status === 'Завершена').length;
+    
+    const recentRequests = filteredRequests
+        .filter(r => r.status === 'Новая' || r.status === 'В обработке')
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 10);
+    
+    const services = await readData(SERVICES_FILE);
+    const branches = await readData(BRANCHES_FILE);
+    
+    const recentWithInfo = recentRequests.map(req => {
+        const service = services.find(s => s.id === req.serviceId);
+        const branch = branches.find(b => b.id === req.branchId);
+        return {
+            ...req,
+            serviceName: service ? service.name : req.service || 'Не указана',
+            branchName: branch ? branch.address : 'Не указан'
+        };
+    });
+    
     res.render('pages/dashboard', {
         title: 'Панель управления — DEEP GAZE',
         user: req.session.user,
         activePage: 'dashboard',
-        permissions: permissions
+        permissions: permissions,
+        newCount: newCount,
+        activeCount: activeCount,
+        completedCount: completedCount,
+        recentRequests: recentWithInfo,
+        shortId: shortId,
+        isAdmin: req.session.user.role === 'admin'
     });
 };
 
 // ===== ЗАГЛУШКА =====
-exports.getPortalPlaceholder = (req, res) => {
+exports.getPlaceholder = (req, res) => {
     const pageMap = {
         '/portal/referrals': { title: 'Реферальная система', icon: '🎯' }
     };
     const page = pageMap[req.path] || { title: 'Страница', icon: '📄' };
+    const permissions = getUserPermissions(req.session.user);
+    
     res.render('pages/portal-placeholder', {
         title: page.title + ' — DEEP GAZE',
         user: req.session.user,
         activePage: req.path,
         pageTitle: page.title,
-        pageIcon: page.icon
+        pageIcon: page.icon,
+        permissions: permissions
     });
 };
 
 // ============================================================
-// ===== РЕФЕРАЛЬНАЯ СИСТЕМА ===================================
+// ===== ВСЕ ВАШИ СУЩЕСТВУЮЩИЕ КОНТРОЛЛЕРЫ ====================
 // ============================================================
+
+// ===== РЕФЕРАЛЬНАЯ СИСТЕМА =====
 exports.getReferrals = async (req, res) => {
     const referrals = await readData(REFERRALS_FILE);
     const permissions = getUserPermissions(req.session.user);
@@ -349,9 +386,7 @@ exports.subtractBonus = async (req, res) => {
     });
 };
 
-// ============================================================
-// ===== ЗАЯВКИ ================================================
-// ============================================================
+// ===== ЗАЯВКИ =====
 exports.getRequests = async (req, res) => {
     const requests = await readData(REQUESTS_FILE);
     const employees = await readData(EMPLOYEES_FILE);
@@ -524,9 +559,7 @@ exports.updateRequestStatus = async (req, res) => {
     }
 };
 
-// ============================================================
-// ===== ФИЛИАЛЫ ===============================================
-// ============================================================
+// ===== ФИЛИАЛЫ =====
 exports.getBranches = async (req, res) => {
     const branches = await readData(BRANCHES_FILE);
     const permissions = getUserPermissions(req.session.user);
@@ -593,9 +626,7 @@ exports.deleteBranch = async (req, res) => {
     res.json({ success: true });
 };
 
-// ============================================================
-// ===== СОТРУДНИКИ ============================================
-// ============================================================
+// ===== СОТРУДНИКИ =====
 exports.getEmployees = async (req, res) => {
     const employees = await readData(EMPLOYEES_FILE);
     const branches = await readData(BRANCHES_FILE);
@@ -690,9 +721,7 @@ exports.deleteEmployee = async (req, res) => {
     res.json({ success: true });
 };
 
-// ============================================================
-// ===== ПАРТНЁРЫ ==============================================
-// ============================================================
+// ===== ПАРТНЁРЫ =====
 exports.getPartners = async (req, res) => {
     const partners = await readData(PARTNERS_FILE);
     const permissions = getUserPermissions(req.session.user);
@@ -757,9 +786,7 @@ exports.deletePartner = async (req, res) => {
     res.json({ success: true });
 };
 
-// ============================================================
-// ===== ПОРТФОЛИО =============================================
-// ============================================================
+// ===== ПОРТФОЛИО =====
 exports.getPortfolio = async (req, res) => {
     const portfolio = await readData(PORTFOLIO_FILE);
     const permissions = getUserPermissions(req.session.user);
@@ -823,9 +850,7 @@ exports.deletePortfolio = async (req, res) => {
     res.json({ success: true });
 };
 
-// ============================================================
-// ===== УСЛУГИ ================================================
-// ============================================================
+// ===== УСЛУГИ =====
 exports.getServices = async (req, res) => {
     const services = await readData(SERVICES_FILE);
     const permissions = getUserPermissions(req.session.user);
@@ -893,7 +918,7 @@ exports.deleteService = async (req, res) => {
 };
 
 // ============================================================
-// ===== ЧЕКИ ==================================================
+// ===== НОВЫЙ МОДУЛЬ: ЧЕКИ ====================================
 // ============================================================
 exports.getChecks = async (req, res) => {
     const checks = await readData(CHECKS_FILE);
@@ -983,6 +1008,87 @@ exports.deleteCheck = async (req, res) => {
 };
 
 // ============================================================
+// ===== АВТОРИЗАЦИЯ ===========================================
+// ============================================================
+exports.getLogin = (req, res) => {
+    if (req.session.user) {
+        return res.redirect('/dashboard');
+    }
+    res.render('pages/login', {
+        title: 'Вход в портал — DEEP GAZE',
+        error: req.query.error || null
+    });
+};
+
+exports.login = async (req, res) => {
+    const { login, password } = req.body;
+    const employees = await readData(EMPLOYEES_FILE);
+    
+    const employee = employees.find(e => e.login === login && e.password === password);
+    
+    if (employee) {
+        let role = 'user';
+        if (employee.position === 'Генеральный директор' || employee.position === 'Директор') {
+            role = 'admin';
+        } else if (employee.position === 'Управляющий') {
+            role = 'manager';
+        }
+        
+        req.session.user = {
+            login: login,
+            name: employee.fullName,
+            position: employee.position,
+            role: role,
+            employeeId: employee.id,
+            branchId: employee.branchId
+        };
+        return res.redirect('/dashboard');
+    }
+    
+    if (login === 'admin' && password === 'admin123') {
+        req.session.user = {
+            login: 'admin',
+            name: 'Администратор',
+            position: 'Администратор',
+            role: 'admin',
+            employeeId: null,
+            branchId: null
+        };
+        return res.redirect('/dashboard');
+    }
+    
+    res.redirect('/login?error=Неверный логин или пароль');
+};
+
+exports.logout = (req, res) => {
+    req.session.destroy(() => {
+        res.redirect('/');
+    });
+};
+
+exports.requireAuth = (req, res, next) => {
+    if (req.session.user) {
+        next();
+    } else {
+        res.redirect('/login?error=Требуется авторизация');
+    }
+};
+
+// ===== ГЛАВНАЯ =====
+exports.getIndex = async (req, res) => {
+    const services = await readData(SERVICES_FILE);
+    const portfolio = await readData(PORTFOLIO_FILE);
+    
+    res.render('pages/index', {
+        title: 'DEEP GAZE — Студия макросъемки радужки глаза',
+        user: req.session.user || null,
+        services: services,
+        portfolio: portfolio,
+        error: null
+    });
+};
+
+// ============================================================
 // ===== ЭКСПОРТ ===============================================
 // ============================================================
 module.exports = {
@@ -999,7 +1105,7 @@ module.exports = {
     getDashboard: exports.getDashboard,
     
     // Заглушка
-    getPortalPlaceholder: exports.getPortalPlaceholder,
+    getPlaceholder: exports.getPlaceholder,
     
     // Рефералы
     getReferrals: exports.getReferrals,
