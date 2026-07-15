@@ -98,6 +98,7 @@ function getUserPermissions(user) {
         };
     }
     
+    // Для всех остальных должностей — полный доступ к чекам
     const rolePermissions = {
         'Фотограф, стажер': {
             requests: { view: true, create: true, edit: true, delete: true },
@@ -107,7 +108,7 @@ function getUserPermissions(user) {
             branches: { view: false, create: false, edit: false, delete: false },
             employees: { view: false, create: false, edit: false, delete: false },
             referrals: { view: true, create: true, edit: true, delete: true },
-            checks: { view: true, create: true, edit: true, delete: true }
+            checks: { view: true, create: true, edit: true, delete: true }  // ✅ Доступ к чекам
         },
         'Фотограф': {
             requests: { view: true, create: true, edit: true, delete: true },
@@ -117,7 +118,7 @@ function getUserPermissions(user) {
             branches: { view: false, create: false, edit: false, delete: false },
             employees: { view: false, create: false, edit: false, delete: false },
             referrals: { view: true, create: true, edit: true, delete: true },
-            checks: { view: true, create: true, edit: true, delete: true }
+            checks: { view: true, create: true, edit: true, delete: true }  // ✅ Доступ к чекам
         },
         'Фотограф, старший': {
             requests: { view: true, create: true, edit: true, delete: true },
@@ -127,7 +128,7 @@ function getUserPermissions(user) {
             branches: { view: false, create: false, edit: false, delete: false },
             employees: { view: false, create: false, edit: false, delete: false },
             referrals: { view: true, create: true, edit: true, delete: true },
-            checks: { view: true, create: true, edit: true, delete: true }
+            checks: { view: true, create: true, edit: true, delete: true }  // ✅ Доступ к чекам
         },
         'Управляющий': {
             requests: { view: true, create: true, edit: true, delete: true },
@@ -137,7 +138,7 @@ function getUserPermissions(user) {
             branches: { view: false, create: false, edit: false, delete: false },
             employees: { view: false, create: false, edit: false, delete: false },
             referrals: { view: true, create: true, edit: true, delete: true },
-            checks: { view: true, create: true, edit: true, delete: true }
+            checks: { view: true, create: true, edit: true, delete: true }  // ✅ Доступ к чекам
         },
         'Директор': {
             requests: { view: true, create: true, edit: true, delete: true },
@@ -147,7 +148,7 @@ function getUserPermissions(user) {
             branches: { view: false, create: false, edit: false, delete: false },
             employees: { view: true, create: true, edit: true, delete: true },
             referrals: { view: true, create: true, edit: true, delete: true },
-            checks: { view: true, create: true, edit: true, delete: true }
+            checks: { view: true, create: true, edit: true, delete: true }  // ✅ Доступ к чекам
         },
         'Генеральный директор': {
             requests: { view: true, create: true, edit: true, delete: true },
@@ -157,13 +158,12 @@ function getUserPermissions(user) {
             branches: { view: true, create: true, edit: true, delete: true },
             employees: { view: true, create: true, edit: true, delete: true },
             referrals: { view: true, create: true, edit: true, delete: true },
-            checks: { view: true, create: true, edit: true, delete: true }
+            checks: { view: true, create: true, edit: true, delete: true }  // ✅ Доступ к чекам
         }
     };
     
     return rolePermissions[user.position] || null;
 }
-
 // ===== ДАШБОРД =====
 exports.getDashboard = async (req, res) => {
     const requests = await readData(REQUESTS_FILE);
