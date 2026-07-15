@@ -7,20 +7,17 @@ require('dotenv').config();
 
 const s3 = require('./config/s3');
 
-// ===== СОЗДАНИЕ ПАПОК =====
+// ===== СОЗДАНИЕ ПАПОК (только для сессий) =====
 const SESSIONS_DIR = path.join(__dirname, 'sessions');
-const DATA_DIR = path.join(__dirname, 'data');
 
-[SESSIONS_DIR, DATA_DIR].forEach(dir => {
-    if (!fs.existsSync(dir)) {
-        try {
-            fs.mkdirSync(dir, { recursive: true, mode: 0o755 });
-            console.log(`📁 Создана папка: ${dir}`);
-        } catch (error) {
-            console.error(`❌ Ошибка создания папки ${dir}:`, error.message);
-        }
+if (!fs.existsSync(SESSIONS_DIR)) {
+    try {
+        fs.mkdirSync(SESSIONS_DIR, { recursive: true, mode: 0o755 });
+        console.log(`📁 Создана папка сессий: ${SESSIONS_DIR}`);
+    } catch (error) {
+        console.error(`❌ Ошибка создания папки сессий:`, error.message);
     }
-});
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,6 +33,17 @@ console.log('📦 ============================\n');
 // Проверяем подключение при старте
 (async () => {
     await s3.testS3Connection();
+    
+    if (s3.s3Connected) {
+        // Проверяем существующие файлы
+        const files = await s3.listS3Files('data/');
+        if (files.length > 0) {
+            console.log(`📁 Найдено файлов в S3: ${files.length}`);
+            console.log(`  └─ ${files.join(', ')}`);
+        } else {
+            console.log('📄 В S3 нет файлов. Они будут созданы при первом сохранении.');
+        }
+    }
 })();
 
 // ===== НАСТРОЙКА ПРИЛОЖЕНИЯ =====
@@ -87,6 +95,17 @@ app.use((req, res, next) => {
 // ===== МАРШРУТЫ =====
 const indexRoutes = require('./routes/index');
 app.use('/', indexRoutes);
+
+// ===== API СТАТУС S3 =====
+app.get('/api/s3-status', (req, res) => {
+    res.json({
+        connected: s3.s3Connected,
+        timestamp: new Date().toISOString(),
+        bucket: s3.BUCKET_NAME,
+        endpoint: s3.s3Config.endpoint,
+        region: s3.s3Config.region
+    });
+});
 
 // ===== 404 =====
 app.use((req, res) => {
