@@ -27,6 +27,7 @@ async function readS3(key) {
         return JSON.parse(body);
     } catch (error) {
         if (error.name === 'NoSuchKey') return null;
+        console.error('Ошибка чтения S3:', error.message);
         return null;
     }
 }
@@ -63,6 +64,10 @@ async function writeData(fileName, data) {
     }
     return result;
 }
+
+// ===== ЭКСПОРТ ДЛЯ ПУБЛИЧНЫХ API =====
+exports.readData = readData;
+exports.writeData = writeData;
 
 // ===== КОНСТАНТЫ =====
 const BRANCHES_FILE = 'branches.json';
@@ -903,4 +908,17 @@ exports.deleteService = async (req, res) => {
     const filtered = services.filter(s => s.id !== id);
     await writeData(SERVICES_FILE, filtered);
     res.json({ success: true });
+};
+
+// ===== ПУБЛИЧНЫЕ МЕТОДЫ ДЛЯ API (без проверки сессии) =====
+exports.getPartnersData = async () => {
+    return await readData(PARTNERS_FILE);
+};
+
+exports.getPortfolioData = async () => {
+    return await readData(PORTFOLIO_FILE);
+};
+
+exports.getServicesData = async () => {
+    return await readData(SERVICES_FILE);
 };
