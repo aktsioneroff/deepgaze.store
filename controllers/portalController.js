@@ -72,7 +72,6 @@ const PORTFOLIO_FILE = 'portfolio.json';
 const SERVICES_FILE = 'services.json';
 const REQUESTS_FILE = 'requests.json';
 const REFERRALS_FILE = 'referrals.json';
-const CHECKS_FILE = 'checks.json'; // ДОБАВЛЕНО
 
 function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
@@ -93,8 +92,7 @@ function getUserPermissions(user) {
             partners: { view: true, create: true, edit: true, delete: true },
             branches: { view: true, create: true, edit: true, delete: true },
             employees: { view: true, create: true, edit: true, delete: true },
-            referrals: { view: true, create: true, edit: true, delete: true },
-            checks: { view: true, create: true, edit: true, delete: true } // ДОБАВЛЕНО
+            referrals: { view: true, create: true, edit: true, delete: true }
         };
     }
     
@@ -106,8 +104,7 @@ function getUserPermissions(user) {
             partners: { view: false, create: false, edit: false, delete: false },
             branches: { view: false, create: false, edit: false, delete: false },
             employees: { view: false, create: false, edit: false, delete: false },
-            referrals: { view: true, create: true, edit: true, delete: true },
-            checks: { view: true, create: true, edit: true, delete: true } // ДОБАВЛЕНО
+            referrals: { view: true, create: true, edit: true, delete: true }
         },
         'Фотограф': {
             requests: { view: true, create: true, edit: true, delete: true },
@@ -116,8 +113,7 @@ function getUserPermissions(user) {
             partners: { view: false, create: false, edit: false, delete: false },
             branches: { view: false, create: false, edit: false, delete: false },
             employees: { view: false, create: false, edit: false, delete: false },
-            referrals: { view: true, create: true, edit: true, delete: true },
-            checks: { view: true, create: true, edit: true, delete: true } // ДОБАВЛЕНО
+            referrals: { view: true, create: true, edit: true, delete: true }
         },
         'Фотограф, старший': {
             requests: { view: true, create: true, edit: true, delete: true },
@@ -126,8 +122,7 @@ function getUserPermissions(user) {
             partners: { view: false, create: false, edit: false, delete: false },
             branches: { view: false, create: false, edit: false, delete: false },
             employees: { view: false, create: false, edit: false, delete: false },
-            referrals: { view: true, create: true, edit: true, delete: true },
-            checks: { view: true, create: true, edit: true, delete: true } // ДОБАВЛЕНО
+            referrals: { view: true, create: true, edit: true, delete: true }
         },
         'Управляющий': {
             requests: { view: true, create: true, edit: true, delete: true },
@@ -136,8 +131,7 @@ function getUserPermissions(user) {
             partners: { view: false, create: false, edit: false, delete: false },
             branches: { view: false, create: false, edit: false, delete: false },
             employees: { view: false, create: false, edit: false, delete: false },
-            referrals: { view: true, create: true, edit: true, delete: true },
-            checks: { view: true, create: true, edit: true, delete: true } // ДОБАВЛЕНО
+            referrals: { view: true, create: true, edit: true, delete: true }
         },
         'Директор': {
             requests: { view: true, create: true, edit: true, delete: true },
@@ -146,8 +140,7 @@ function getUserPermissions(user) {
             partners: { view: true, create: true, edit: true, delete: true },
             branches: { view: false, create: false, edit: false, delete: false },
             employees: { view: true, create: true, edit: true, delete: true },
-            referrals: { view: true, create: true, edit: true, delete: true },
-            checks: { view: true, create: true, edit: true, delete: true } // ДОБАВЛЕНО
+            referrals: { view: true, create: true, edit: true, delete: true }
         },
         'Генеральный директор': {
             requests: { view: true, create: true, edit: true, delete: true },
@@ -156,8 +149,7 @@ function getUserPermissions(user) {
             partners: { view: true, create: true, edit: true, delete: true },
             branches: { view: true, create: true, edit: true, delete: true },
             employees: { view: true, create: true, edit: true, delete: true },
-            referrals: { view: true, create: true, edit: true, delete: true },
-            checks: { view: true, create: true, edit: true, delete: true } // ДОБАВЛЕНО
+            referrals: { view: true, create: true, edit: true, delete: true }
         }
     };
     
@@ -230,10 +222,6 @@ exports.getPlaceholder = (req, res) => {
         permissions: permissions
     });
 };
-
-// ============================================================
-// ===== ВСЕ ВАШИ СУЩЕСТВУЮЩИЕ КОНТРОЛЛЕРЫ ====================
-// ============================================================
 
 // ===== РЕФЕРАЛЬНАЯ СИСТЕМА =====
 exports.getReferrals = async (req, res) => {
@@ -915,247 +903,4 @@ exports.deleteService = async (req, res) => {
     const filtered = services.filter(s => s.id !== id);
     await writeData(SERVICES_FILE, filtered);
     res.json({ success: true });
-};
-
-// ============================================================
-// ===== НОВЫЙ МОДУЛЬ: ЧЕКИ ====================================
-// ============================================================
-exports.getChecks = async (req, res) => {
-    const checks = await readData(CHECKS_FILE);
-    const permissions = getUserPermissions(req.session.user);
-    
-    checks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
-    res.render('pages/checks/index', {
-        title: 'Чеки — DEEP GAZE',
-        user: req.session.user,
-        activePage: '/checks',
-        checks: checks,
-        shortId: shortId,
-        permissions: permissions
-    });
-};
-
-exports.getCheckForm = async (req, res) => {
-    const id = req.params.id;
-    let check = null;
-    const services = await readData(SERVICES_FILE);
-    const permissions = getUserPermissions(req.session.user);
-    
-    if (id) {
-        const checks = await readData(CHECKS_FILE);
-        check = checks.find(c => c.id === id);
-    }
-    
-    res.render('pages/checks/form', {
-        title: (id ? 'Редактирование' : 'Создание') + ' чека — DEEP GAZE',
-        user: req.session.user,
-        activePage: '/checks',
-        check: check,
-        services: services,
-        isEdit: !!id,
-        permissions: permissions
-    });
-};
-
-exports.saveCheck = async (req, res) => {
-    const { id, clientName, phone, serviceId, amount, paymentMethod, status } = req.body;
-    const checks = await readData(CHECKS_FILE);
-    const services = await readData(SERVICES_FILE);
-    
-    const service = services.find(s => s.id === serviceId);
-    const parsedAmount = parseFloat(amount) || 0;
-    
-    if (id) {
-        const index = checks.findIndex(c => c.id === id);
-        if (index !== -1) {
-            checks[index] = { 
-                ...checks[index], 
-                clientName: clientName || checks[index].clientName,
-                phone: phone || checks[index].phone,
-                serviceId: serviceId || checks[index].serviceId,
-                serviceName: service ? service.name : checks[index].serviceName,
-                amount: parsedAmount,
-                paymentMethod: paymentMethod || checks[index].paymentMethod,
-                status: status || checks[index].status
-            };
-        }
-    } else {
-        checks.push({
-            id: generateId(),
-            clientName: clientName || 'Клиент',
-            phone: phone || '',
-            serviceId: serviceId || '',
-            serviceName: service ? service.name : '',
-            amount: parsedAmount,
-            paymentMethod: paymentMethod || 'Наличные',
-            status: status || 'Оплачен',
-            createdBy: req.session.user.name || 'Менеджер',
-            createdAt: new Date().toISOString()
-        });
-    }
-    
-    await writeData(CHECKS_FILE, checks);
-    res.redirect('/checks');
-};
-
-exports.deleteCheck = async (req, res) => {
-    const id = req.params.id;
-    const checks = await readData(CHECKS_FILE);
-    const filtered = checks.filter(c => c.id !== id);
-    await writeData(CHECKS_FILE, filtered);
-    res.json({ success: true });
-};
-
-// ============================================================
-// ===== АВТОРИЗАЦИЯ ===========================================
-// ============================================================
-exports.getLogin = (req, res) => {
-    if (req.session.user) {
-        return res.redirect('/dashboard');
-    }
-    res.render('pages/login', {
-        title: 'Вход в портал — DEEP GAZE',
-        error: req.query.error || null
-    });
-};
-
-exports.login = async (req, res) => {
-    const { login, password } = req.body;
-    const employees = await readData(EMPLOYEES_FILE);
-    
-    const employee = employees.find(e => e.login === login && e.password === password);
-    
-    if (employee) {
-        let role = 'user';
-        if (employee.position === 'Генеральный директор' || employee.position === 'Директор') {
-            role = 'admin';
-        } else if (employee.position === 'Управляющий') {
-            role = 'manager';
-        }
-        
-        req.session.user = {
-            login: login,
-            name: employee.fullName,
-            position: employee.position,
-            role: role,
-            employeeId: employee.id,
-            branchId: employee.branchId
-        };
-        return res.redirect('/dashboard');
-    }
-    
-    if (login === 'admin' && password === 'admin123') {
-        req.session.user = {
-            login: 'admin',
-            name: 'Администратор',
-            position: 'Администратор',
-            role: 'admin',
-            employeeId: null,
-            branchId: null
-        };
-        return res.redirect('/dashboard');
-    }
-    
-    res.redirect('/login?error=Неверный логин или пароль');
-};
-
-exports.logout = (req, res) => {
-    req.session.destroy(() => {
-        res.redirect('/');
-    });
-};
-
-exports.requireAuth = (req, res, next) => {
-    if (req.session.user) {
-        next();
-    } else {
-        res.redirect('/login?error=Требуется авторизация');
-    }
-};
-
-// ===== ГЛАВНАЯ =====
-exports.getIndex = async (req, res) => {
-    const services = await readData(SERVICES_FILE);
-    const portfolio = await readData(PORTFOLIO_FILE);
-    
-    res.render('pages/index', {
-        title: 'DEEP GAZE — Студия макросъемки радужки глаза',
-        user: req.session.user || null,
-        services: services,
-        portfolio: portfolio,
-        error: null
-    });
-};
-
-// ============================================================
-// ===== ЭКСПОРТ ===============================================
-// ============================================================
-module.exports = {
-    // Авторизация
-    getLogin: exports.getLogin,
-    login: exports.login,
-    logout: exports.logout,
-    requireAuth: exports.requireAuth,
-    
-    // Главная
-    getIndex: exports.getIndex,
-    
-    // Дашборд
-    getDashboard: exports.getDashboard,
-    
-    // Заглушка
-    getPlaceholder: exports.getPlaceholder,
-    
-    // Рефералы
-    getReferrals: exports.getReferrals,
-    getReferralForm: exports.getReferralForm,
-    saveReferral: exports.saveReferral,
-    deleteReferral: exports.deleteReferral,
-    searchReferral: exports.searchReferral,
-    addBonus: exports.addBonus,
-    subtractBonus: exports.subtractBonus,
-    
-    // Заявки
-    getRequests: exports.getRequests,
-    getRequestForm: exports.getRequestForm,
-    saveRequest: exports.saveRequest,
-    deleteRequest: exports.deleteRequest,
-    updateRequestStatus: exports.updateRequestStatus,
-    
-    // Филиалы
-    getBranches: exports.getBranches,
-    getBranchForm: exports.getBranchForm,
-    saveBranch: exports.saveBranch,
-    deleteBranch: exports.deleteBranch,
-    
-    // Сотрудники
-    getEmployees: exports.getEmployees,
-    getEmployeeForm: exports.getEmployeeForm,
-    saveEmployee: exports.saveEmployee,
-    deleteEmployee: exports.deleteEmployee,
-    
-    // Партнёры
-    getPartners: exports.getPartners,
-    getPartnerForm: exports.getPartnerForm,
-    savePartner: exports.savePartner,
-    deletePartner: exports.deletePartner,
-    
-    // Портфолио
-    getPortfolio: exports.getPortfolio,
-    getPortfolioForm: exports.getPortfolioForm,
-    savePortfolio: exports.savePortfolio,
-    deletePortfolio: exports.deletePortfolio,
-    
-    // Услуги
-    getServices: exports.getServices,
-    getServiceForm: exports.getServiceForm,
-    saveService: exports.saveService,
-    deleteService: exports.deleteService,
-    
-    // Чеки (НОВЫЙ МОДУЛЬ)
-    getChecks: exports.getChecks,
-    getCheckForm: exports.getCheckForm,
-    saveCheck: exports.saveCheck,
-    deleteCheck: exports.deleteCheck
 };
