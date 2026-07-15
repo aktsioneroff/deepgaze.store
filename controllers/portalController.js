@@ -1,14 +1,14 @@
+const server = require('../server');
 const fs = require('fs');
 const path = require('path');
-const s3Data = require('../utils/s3Data');
 
-// ===== ФУНКЦИИ ДЛЯ РАБОТЫ С ДАННЫМИ (S3) =====
+// ===== ИСПОЛЬЗУЕМ ФУНКЦИИ ИЗ SERVER.JS =====
 async function readData(fileName) {
-    return await s3Data.readData(fileName);
+    return await server.readData(fileName);
 }
 
 async function writeData(fileName, data) {
-    return await s3Data.writeData(fileName, data);
+    return await server.writeData(fileName, data);
 }
 
 // ===== КОНСТАНТЫ =====
@@ -103,7 +103,7 @@ function getUserPermissions(user) {
     return rolePermissions[user.position] || null;
 }
 
-// ===== ДАШБОРД =====
+// ===== ВСЕ МЕТОДЫ =====
 exports.getDashboard = async (req, res) => {
     const requests = await readData(REQUESTS_FILE);
     const permissions = getUserPermissions(req.session.user);
@@ -170,7 +170,7 @@ exports.getPlaceholder = (req, res) => {
     });
 };
 
-// ===== РЕФЕРАЛЬНАЯ СИСТЕМА =====
+// ===== РЕФЕРАЛЫ =====
 exports.getReferrals = async (req, res) => {
     const referrals = await readData(REFERRALS_FILE);
     const permissions = getUserPermissions(req.session.user);
