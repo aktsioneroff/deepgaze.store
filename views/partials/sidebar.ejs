@@ -12,7 +12,7 @@
   </div>
   
   <nav class="sidebar-nav">
-    <!-- Панель управления - доступна всем -->
+    <!-- Панель управления -->
     <a href="/dashboard" class="sidebar-link <%= activePage === 'dashboard' ? 'active' : '' %>" data-tooltip="Панель управления">
       <span class="sidebar-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -25,7 +25,7 @@
       <span class="sidebar-label">Панель управления</span>
     </a>
 
-    <!-- Заявки - доступны всем -->
+    <!-- Заявки -->
     <a href="/requests" class="sidebar-link <%= activePage === '/requests' ? 'active' : '' %>" data-tooltip="Заявки">
       <span class="sidebar-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -38,8 +38,8 @@
       <span class="sidebar-label">Заявки</span>
     </a>
 
-    <!-- Услуги - только для определенных должностей -->
-    <% if (typeof permissions !== 'undefined' && permissions && permissions.services && permissions.services.view) { %>
+    <!-- Услуги -->
+    <% if (permissions && permissions.services && permissions.services.view) { %>
     <a href="/services" class="sidebar-link <%= activePage === '/services' ? 'active' : '' %>" data-tooltip="Услуги">
       <span class="sidebar-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -51,8 +51,8 @@
     </a>
     <% } %>
 
-    <!-- Портфолио - только для определенных должностей -->
-    <% if (typeof permissions !== 'undefined' && permissions && permissions.portfolio && permissions.portfolio.view) { %>
+    <!-- Портфолио -->
+    <% if (permissions && permissions.portfolio && permissions.portfolio.view) { %>
     <a href="/portfolio" class="sidebar-link <%= activePage === '/portfolio' ? 'active' : '' %>" data-tooltip="Портфолио">
       <span class="sidebar-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -64,8 +64,8 @@
     </a>
     <% } %>
 
-    <!-- Партнёры - только для определенных должностей -->
-    <% if (typeof permissions !== 'undefined' && permissions && permissions.partners && permissions.partners.view) { %>
+    <!-- Партнёры -->
+    <% if (permissions && permissions.partners && permissions.partners.view) { %>
     <a href="/partners" class="sidebar-link <%= activePage === '/partners' ? 'active' : '' %>" data-tooltip="Партнёры">
       <span class="sidebar-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -79,8 +79,8 @@
     </a>
     <% } %>
 
-    <!-- Филиалы - только для определенных должностей -->
-    <% if (typeof permissions !== 'undefined' && permissions && permissions.branches && permissions.branches.view) { %>
+    <!-- Филиалы -->
+    <% if (permissions && permissions.branches && permissions.branches.view) { %>
     <a href="/branches" class="sidebar-link <%= activePage === '/branches' ? 'active' : '' %>" data-tooltip="Филиалы">
       <span class="sidebar-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -92,8 +92,8 @@
     </a>
     <% } %>
 
-    <!-- Сотрудники - только для определенных должностей -->
-    <% if (typeof permissions !== 'undefined' && permissions && permissions.employees && permissions.employees.view) { %>
+    <!-- Сотрудники -->
+    <% if (permissions && permissions.employees && permissions.employees.view) { %>
     <a href="/employees" class="sidebar-link <%= activePage === '/employees' ? 'active' : '' %>" data-tooltip="Сотрудники">
       <span class="sidebar-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -105,7 +105,7 @@
     </a>
     <% } %>
 
-    <!-- Рефералы - доступны всем -->
+    <!-- Рефералы -->
     <a href="/portal/referrals" class="sidebar-link <%= activePage === '/portal/referrals' ? 'active' : '' %>" data-tooltip="Реферальная система">
       <span class="sidebar-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -114,6 +114,18 @@
       </span>
       <span class="sidebar-label">Рефералы</span>
     </a>
+
+    <!-- Чеки -->
+    <a href="/checks" class="sidebar-link <%= activePage === '/checks' ? 'active' : '' %>" data-tooltip="Чеки">
+      <span class="sidebar-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="2" y="3" width="20" height="18" rx="2" ry="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </span>
+      <span class="sidebar-label">Чеки</span>
+    </a>
   </nav>
 
   <div class="sidebar-footer">
@@ -121,7 +133,7 @@
       <div class="user-avatar"><%= user ? user.name.charAt(0).toUpperCase() : '?' %></div>
       <div class="user-info">
         <span class="user-name"><%= user ? user.name : 'Гость' %></span>
-        <span class="user-role"><%= user ? (user.position || user.role) : '' %></span>
+        <span class="user-role"><%= user ? user.position || user.role : '' %></span>
       </div>
     </div>
     <a href="/logout" class="sidebar-logout" data-tooltip="Выйти">
