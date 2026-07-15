@@ -156,6 +156,15 @@ router.get('/services/edit/:id', checkSession, asyncHandler(portalController.get
 router.post('/services/save', checkSession, asyncHandler(portalController.saveService));
 router.delete('/services/delete/:id', checkSession, asyncHandler(portalController.deleteService));
 
+// ===== ЧЕКИ =====
+router.get('/checks', checkSession, asyncHandler(portalController.getChecks));
+router.get('/checks/add', checkSession, asyncHandler(portalController.getCheckForm));
+router.get('/checks/edit/:id', checkSession, asyncHandler(portalController.getCheckForm));
+router.get('/checks/view/:id', checkSession, asyncHandler(portalController.viewCheck));
+router.post('/checks/save', checkSession, asyncHandler(portalController.saveCheck));
+router.delete('/checks/delete/:id', checkSession, asyncHandler(portalController.deleteCheck));
+router.get('/checks/pdf/:id', checkSession, asyncHandler(portalController.generatePDF));
+
 // ===== API ПРОВЕРКИ СЕССИИ =====
 router.get('/api/check-session', (req, res) => {
     if (req.session && req.session.user) {
