@@ -1,228 +1,468 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title %></title>
-  
-  <link rel="icon" type="image/x-icon" href="/ico/favicon.ico">
-  <link rel="apple-touch-icon" href="/ico/apple-touch-icon.png">
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  
-  <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/portal.css">
-  <link rel="stylesheet" href="/css/portal-modules.css">
-  
-  <style>
-    .module-form .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-    }
-    .module-form .form-row-3 {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 1rem;
-    }
-    .total-display {
-      background: rgba(200, 164, 92, 0.08);
-      border: 1px solid rgba(200, 164, 92, 0.2);
-      border-radius: 0.5rem;
-      padding: 1rem 1.5rem;
-      text-align: center;
-      font-size: 1.2rem;
-      font-weight: 600;
-      color: var(--accent);
-      font-family: 'Space Grotesk', sans-serif;
-    }
-    .total-display .total-amount {
-      font-size: 1.8rem;
-    }
-    .field-hint {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      margin-top: 0.2rem;
-    }
-    @media (max-width: 600px) {
-      .module-form .form-row,
-      .module-form .form-row-3 {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="icon" type="image/x-icon" href="/ico/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/main.css">
+    <style>
+        /* Стили как в index.ejs */
+        :root {
+            --portal-bg: #0a0c12;
+            --portal-surface: #11141c;
+            --portal-border: rgba(255, 255, 255, 0.06);
+            --portal-text: #e8eaef;
+            --portal-text-secondary: #7c8190;
+            --portal-text-muted: #484c58;
+            --portal-accent: #c8a45c;
+            --portal-radius: 0.75rem;
+            --portal-transition: 0.35s cubic-bezier(0.25, 0.8, 0.25, 1.2);
+        }
+
+        .portal-container {
+            display: flex;
+            min-height: 100vh;
+            background: var(--portal-bg);
+        }
+
+        .portal-sidebar {
+            width: 260px;
+            background: var(--portal-surface);
+            border-right: 1px solid var(--portal-border);
+            padding: 1.5rem 1rem;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            overflow-y: auto;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .portal-sidebar .logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.4rem;
+            letter-spacing: 0.04em;
+            padding: 0 0.5rem 1.5rem 0.5rem;
+            border-bottom: 1px solid var(--portal-border);
+            margin-bottom: 1.5rem;
+        }
+
+        .portal-sidebar .logo span { color: var(--portal-accent); }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.7rem 1rem;
+            border-radius: var(--portal-radius);
+            color: var(--portal-text-secondary);
+            text-decoration: none;
+            transition: var(--portal-transition);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .sidebar-nav a:hover {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--portal-text);
+        }
+
+        .sidebar-nav a.active {
+            background: rgba(200, 164, 92, 0.1);
+            color: var(--portal-accent);
+            border: 1px solid rgba(200, 164, 92, 0.2);
+        }
+
+        .sidebar-nav a .icon {
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        .sidebar-nav .nav-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--portal-text-muted);
+            padding: 0.5rem 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .sidebar-user {
+            padding: 1rem;
+            border-top: 1px solid var(--portal-border);
+            margin-top: auto;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--portal-surface);
+        }
+
+        .sidebar-user .user-name {
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .sidebar-user .user-role {
+            font-size: 0.7rem;
+            color: var(--portal-text-muted);
+        }
+
+        .sidebar-user .logout-btn {
+            display: inline-block;
+            margin-top: 0.5rem;
+            padding: 0.3rem 1rem;
+            border-radius: 2rem;
+            background: transparent;
+            border: 1px solid var(--portal-border);
+            color: var(--portal-text-secondary);
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: var(--portal-transition);
+            text-decoration: none;
+        }
+
+        .sidebar-user .logout-btn:hover {
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+
+        .portal-content {
+            margin-left: 260px;
+            flex: 1;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .portal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .portal-header h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.4rem;
+            border-radius: 3rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--portal-transition);
+            border: none;
+            font-family: 'Inter', sans-serif;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--portal-accent);
+            color: #0a0c12;
+        }
+
+        .btn-primary:hover {
+            background: #d4b46e;
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--portal-text);
+            border: 1px solid var(--portal-border);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--portal-accent);
+            color: var(--portal-accent);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        /* ===== ФОРМА ===== */
+        .form-container {
+            background: var(--portal-surface);
+            border: 1px solid var(--portal-border);
+            border-radius: var(--portal-radius);
+            padding: 2rem;
+            max-width: 600px;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--portal-text-secondary);
+            margin-bottom: 0.4rem;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.7rem 1rem;
+            border-radius: 0.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--portal-border);
+            color: var(--portal-text);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            transition: var(--portal-transition);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--portal-accent);
+        }
+
+        .form-group input::placeholder {
+            color: var(--portal-text-muted);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .form-actions .btn {
+            flex: 1;
+            justify-content: center;
+        }
+
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 101;
+            background: var(--portal-surface);
+            border: 1px solid var(--portal-border);
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.8rem;
+            color: var(--portal-text);
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-toggle {
+                display: block;
+            }
+
+            .portal-sidebar {
+                transform: translateX(-100%);
+            }
+
+            .portal-sidebar.open {
+                transform: translateX(0);
+            }
+
+            .portal-content {
+                margin-left: 0;
+                padding: 1rem;
+                padding-top: 4rem;
+            }
+
+            .form-container {
+                padding: 1.2rem;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="grid-bg"></div>
-  
-  <div class="portal-wrapper">
-    <%- include('../../partials/sidebar', { activePage: '/checks', user: user, permissions: permissions }) %>
-    
-    <main class="portal-main">
-      <header class="portal-header">
-        <div class="portal-header-left">
-          <button class="mobile-sidebar-toggle" onclick="toggleSidebar()" title="Открыть меню">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="3" y1="6" x2="21" y2="6"/>
-              <line x1="3" y1="12" x2="21" y2="12"/>
-              <line x1="3" y1="18" x2="21" y2="18"/>
-            </svg>
-          </button>
-          <h1>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.5rem;">
-              <rect x="2" y="3" width="20" height="18" rx="2" ry="2"/>
-              <line x1="8" y1="21" x2="16" y2="21"/>
-              <line x1="12" y1="17" x2="12" y2="21"/>
-            </svg>
-            <%= isEdit ? 'Редактирование' : 'Создание' %> чека
-          </h1>
-        </div>
-        <div class="portal-header-right">
-          <span class="header-date"><%= new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) %></span>
-        </div>
-      </header>
-      
-      <div class="portal-content">
-        <div class="module-form">
-          <form action="/checks/save" method="POST" id="checkForm">
-            <% if (isEdit) { %>
-              <input type="hidden" name="id" value="<%= check.id %>">
-            <% } %>
+    <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+
+    <div class="portal-container">
+        <!-- Сайдбар -->
+        <aside class="portal-sidebar" id="sidebar">
+            <div class="logo">DEEP<span>.</span>GAZE</div>
             
-            <div class="form-row">
-              <div class="form-group">
-                <label for="clientName">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                  </svg>
-                  Имя клиента
-                </label>
-                <input type="text" id="clientName" name="clientName" class="form-control" placeholder="Иван Петров" value="<%= check ? check.clientName : '' %>" required>
-              </div>
-              
-              <div class="form-group">
-                <label for="clientPhone">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                  </svg>
-                  Номер клиента
-                </label>
-                <input type="tel" id="clientPhone" name="clientPhone" class="form-control" placeholder="+7 (999) 123-45-67" value="<%= check ? check.clientPhone : '' %>">
-              </div>
+            <nav class="sidebar-nav">
+                <div class="nav-label">Портал</div>
+                <a href="/dashboard" class="<%= activePage === 'dashboard' ? 'active' : '' %>">
+                    <span class="icon">📊</span> Дашборд
+                </a>
+                
+                <div class="nav-label">Управление</div>
+                <% if (permissions && permissions.requests && permissions.requests.view) { %>
+                    <a href="/requests" class="<%= activePage === '/requests' ? 'active' : '' %>">
+                        <span class="icon">📋</span> Заявки
+                    </a>
+                <% } %>
+                <% if (permissions && permissions.services && permissions.services.view) { %>
+                    <a href="/services" class="<%= activePage === '/services' ? 'active' : '' %>">
+                        <span class="icon">💎</span> Услуги
+                    </a>
+                <% } %>
+                <% if (permissions && permissions.portfolio && permissions.portfolio.view) { %>
+                    <a href="/portfolio" class="<%= activePage === '/portfolio' ? 'active' : '' %>">
+                        <span class="icon">🖼️</span> Портфолио
+                    </a>
+                <% } %>
+                <% if (permissions && permissions.partners && permissions.partners.view) { %>
+                    <a href="/partners" class="<%= activePage === '/partners' ? 'active' : '' %>">
+                        <span class="icon">🤝</span> Партнёры
+                    </a>
+                <% } %>
+                <% if (permissions && permissions.branches && permissions.branches.view) { %>
+                    <a href="/branches" class="<%= activePage === '/branches' ? 'active' : '' %>">
+                        <span class="icon">📍</span> Филиалы
+                    </a>
+                <% } %>
+                <% if (permissions && permissions.employees && permissions.employees.view) { %>
+                    <a href="/employees" class="<%= activePage === '/employees' ? 'active' : '' %>">
+                        <span class="icon">👤</span> Сотрудники
+                    </a>
+                <% } %>
+                <% if (permissions && permissions.referrals && permissions.referrals.view) { %>
+                    <a href="/portal/referrals" class="<%= activePage === '/portal/referrals' ? 'active' : '' %>">
+                        <span class="icon">🎯</span> Рефералы
+                    </a>
+                <% } %>
+                <% if (permissions && permissions.checks && permissions.checks.view) { %>
+                    <a href="/checks" class="<%= activePage === '/checks' ? 'active' : '' %>">
+                        <span class="icon">💳</span> Чеки
+                    </a>
+                <% } %>
+            </nav>
+
+            <div class="sidebar-user">
+                <div class="user-name"><%= user.name %></div>
+                <div class="user-role"><%= user.position || user.role %></div>
+                <a href="/logout" class="logout-btn">🚪 Выйти</a>
             </div>
-            
-            <div class="form-row-3">
-              <div class="form-group">
-                <label for="serviceId">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
-                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                  </svg>
-                  Услуга
-                </label>
-                <select id="serviceId" name="serviceId" class="form-control" required>
-                  <option value="">Выберите услугу</option>
-                  <% services.forEach(function(service) { %>
-                    <option value="<%= service.id %>" data-price="<%= service.price.replace(/[^0-9.]/g, '') %>" <%= check && check.serviceId === service.id ? 'selected' : '' %>>
-                      <%= service.name %> - <%= service.price %>
-                    </option>
-                  <% }) %>
-                </select>
-              </div>
-              
-              <div class="form-group">
-                <label for="discount">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
-                    <circle cx="12" cy="12" r="10"/>
-                    <path d="M12 6v6l4 2"/>
-                  </svg>
-                  Скидка (%)
-                </label>
-                <input type="number" id="discount" name="discount" class="form-control" placeholder="0" min="0" max="100" value="<%= check ? check.discount : 0 %>" step="1">
-                <div class="field-hint">Введите процент скидки (0-100)</div>
-              </div>
-              
-              <div class="form-group">
-                <label for="paymentMethod">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
-                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                    <line x1="1" y1="10" x2="23" y2="10"/>
-                  </svg>
-                  Способ оплаты
-                </label>
-                <select id="paymentMethod" name="paymentMethod" class="form-control" required>
-                  <option value="Оплата картой" <%= check && check.paymentMethod === 'Оплата картой' ? 'selected' : '' %>>Оплата картой</option>
-                  <option value="Оплата наличными" <%= check && check.paymentMethod === 'Оплата наличными' ? 'selected' : '' %>>Оплата наличными</option>
-                  <option value="Перевод" <%= check && check.paymentMethod === 'Перевод' ? 'selected' : '' %>>Перевод</option>
-                  <option value="Расчётный счёт" <%= check && check.paymentMethod === 'Расчётный счёт' ? 'selected' : '' %>>Расчётный счёт</option>
-                </select>
-              </div>
+        </aside>
+
+        <!-- Основной контент -->
+        <main class="portal-content">
+            <header class="portal-header">
+                <h1><%= isEdit ? '✏️ Редактирование чека' : '➕ Создание чека' %></h1>
+                <a href="/checks" class="btn btn-outline">← Назад к списку</a>
+            </header>
+
+            <div class="form-container">
+                <form action="/checks/save" method="POST">
+                    <% if (isEdit && check) { %>
+                        <input type="hidden" name="id" value="<%= check.id %>">
+                    <% } %>
+
+                    <div class="form-group">
+                        <label for="clientName">Имя клиента *</label>
+                        <input type="text" id="clientName" name="clientName" 
+                               value="<%= check ? check.clientName : '' %>" 
+                               placeholder="Введите имя клиента" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">Телефон</label>
+                        <input type="text" id="phone" name="phone" 
+                               value="<%= check ? check.phone : '' %>" 
+                               placeholder="+7 (999) 123-45-67">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="serviceId">Услуга *</label>
+                        <select id="serviceId" name="serviceId" required>
+                            <option value="">Выберите услугу</option>
+                            <% if (services && services.length > 0) { %>
+                                <% services.forEach(service => { %>
+                                    <option value="<%= service.id %>" 
+                                        <%= (check && check.serviceId === service.id) ? 'selected' : '' %>>
+                                        <%= service.name %> — <%= service.price %>
+                                    </option>
+                                <% }) %>
+                            <% } %>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="amount">Сумма (₽) *</label>
+                        <input type="number" id="amount" name="amount" 
+                               value="<%= check ? check.amount : '' %>" 
+                               placeholder="Введите сумму" required step="0.01" min="0">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="paymentMethod">Метод оплаты</label>
+                        <select id="paymentMethod" name="paymentMethod">
+                            <option value="Наличные" <%= (check && check.paymentMethod === 'Наличные') ? 'selected' : '' %>>Наличные</option>
+                            <option value="Карта" <%= (check && check.paymentMethod === 'Карта') ? 'selected' : '' %>>Карта</option>
+                            <option value="Перевод" <%= (check && check.paymentMethod === 'Перевод') ? 'selected' : '' %>>Перевод</option>
+                            <option value="Бонусы" <%= (check && check.paymentMethod === 'Бонусы') ? 'selected' : '' %>>Бонусы</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="status">Статус</label>
+                        <select id="status" name="status">
+                            <option value="Оплачен" <%= (check && check.status === 'Оплачен') ? 'selected' : '' %>>Оплачен</option>
+                            <option value="Черновик" <%= (check && check.status === 'Черновик') ? 'selected' : '' %>>Черновик</option>
+                            <option value="Отменен" <%= (check && check.status === 'Отменен') ? 'selected' : '' %>>Отменен</option>
+                        </select>
+                    </div>
+
+                    <div class="form-actions">
+                        <a href="/checks" class="btn btn-outline">Отмена</a>
+                        <button type="submit" class="btn btn-primary">
+                            <%= isEdit ? '💾 Сохранить' : '✅ Создать чек' %>
+                        </button>
+                    </div>
+                </form>
             </div>
-            
-            <div class="form-group">
-              <label for="status">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
-                Статус
-              </label>
-              <select id="status" name="status" class="form-control">
-                <option value="Оплачен" <%= check && check.status === 'Оплачен' ? 'selected' : '' %>>Оплачен</option>
-                <option value="Ожидает оплаты" <%= check && check.status === 'Ожидает оплаты' ? 'selected' : '' %>>Ожидает оплаты</option>
-                <option value="Отменён" <%= check && check.status === 'Отменён' ? 'selected' : '' %>>Отменён</option>
-              </select>
-            </div>
-            
-            <div class="form-group">
-              <label>Итого к оплате</label>
-              <div class="total-display" id="totalDisplay">
-                <span class="total-amount" id="totalAmount">0</span> ₽
-              </div>
-            </div>
-            
-            <div class="form-actions">
-              <button type="submit" class="btn btn-primary">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:0.3rem;">
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                  <polyline points="17 21 17 13 7 13 7 21"/>
-                  <polyline points="7 3 7 8 15 8"/>
-                </svg>
-                <%= isEdit ? 'Сохранить' : 'Создать чек' %>
-              </button>
-              <a href="/checks" class="btn btn-outline">Отмена</a>
-            </div>
-          </form>
-        </div>
-      </div>
-    </main>
-  </div>
-  
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const serviceSelect = document.getElementById('serviceId');
-      const discountInput = document.getElementById('discount');
-      const totalDisplay = document.getElementById('totalAmount');
-      
-      function updateTotal() {
-        const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
-        const price = parseFloat(selectedOption?.getAttribute('data-price') || 0);
-        const discount = parseFloat(discountInput.value) || 0;
-        const total = price - (price * discount / 100);
-        totalDisplay.textContent = total.toLocaleString();
-      }
-      
-      serviceSelect.addEventListener('change', updateTotal);
-      discountInput.addEventListener('input', updateTotal);
-      
-      // Initial update
-      updateTotal();
-    });
-  </script>
-  
-  <script src="/js/portal.js"></script>
+        </main>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        }
+
+        document.addEventListener('click', function(e) {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.querySelector('.sidebar-toggle');
+            if (window.innerWidth <= 768) {
+                if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
+                    sidebar.classList.remove('open');
+                }
+            }
+        });
+    </script>
 </body>
 </html>
