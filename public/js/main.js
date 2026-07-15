@@ -70,48 +70,14 @@ window.openLoginModal = () => lO.classList.add('active');
 window.closeLoginModal = () => lO.classList.remove('active');
 lO.addEventListener('click', e => { if (e.target === lO) closeLoginModal(); });
 
-// ===== ПЕРЕМЕННЫЕ ДЛЯ ЗАПИСИ =====
-let selectedServiceId = null;
-let selectedServiceName = null;
-
-// ===== ЗАГРУЗКА УСЛУГ ДЛЯ ФОРМЫ ЗАПИСИ =====
-async function loadServicesForBooking() {
-  try {
-    const response = await fetch('/api/services');
-    const services = await response.json();
-    const select = document.getElementById('bookingService');
-    if (select) {
-      if (services && services.length > 0) {
-        select.innerHTML = '<option value="">Выберите услугу</option>' + 
-          services.map(s => `<option value="${s.id}">${s.name} - ${s.price}</option>`).join('');
-      } else {
-        select.innerHTML = '<option value="">Услуги временно недоступны</option>';
-      }
-    }
-  } catch (error) {
-    console.error('Ошибка загрузки услуг для записи:', error);
-  }
-}
-
 // ===== CALENDAR =====
-const calGrid = document.getElementById('calGrid');
-const sD = document.getElementById('sumDate');
-const sT = document.getElementById('sumTime');
-const sService = document.getElementById('sumService');
-const oTB = document.getElementById('openTimeModalBtn');
-
-let selD = null;
-let selT = null;
+const calGrid = document.getElementById('calGrid'), sD = document.getElementById('sumDate'), sT = document.getElementById('sumTime'), oTB = document.getElementById('openTimeModalBtn');
+let selD = null, selT = null;
 let occupiedTimes = [];
 
-const now = new Date();
-const cm = now.getMonth();
-const cy = now.getFullYear();
-const td = now.getDate();
-const mn = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-const dh = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+const now = new Date(), cm = now.getMonth(), cy = now.getFullYear(), td = now.getDate();
+const mn = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'], dh = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
 
-// Функция для получения занятых времен
 async function fetchOccupiedTimes(date) {
     try {
         const response = await fetch(`/api/occupied-times?date=${date}`);
@@ -125,7 +91,6 @@ async function fetchOccupiedTimes(date) {
     }
 }
 
-// Функция для обновления календаря
 async function renderCalendar(selectedDate) {
     calGrid.innerHTML = '';
     
@@ -163,9 +128,6 @@ async function renderCalendar(selectedDate) {
                 selT = null;
                 sD.textContent = day + ' ' + mn[cm] + ' ' + cy;
                 sT.textContent = '—';
-                if (sService) sService.textContent = '—';
-                selectedServiceId = null;
-                selectedServiceName = null;
                 
                 const dateStr = `${cy}-${String(cm + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 await fetchOccupiedTimes(dateStr);
@@ -183,10 +145,7 @@ async function renderCalendar(selectedDate) {
 renderCalendar(null);
 
 // ===== TIME =====
-const tMO = document.getElementById('timeModalOverlay');
-const tG = document.getElementById('timeGrid');
-const tMD = document.getElementById('timeModalDate');
-const cTB = document.getElementById('confirmTimeBtn');
+const tMO = document.getElementById('timeModalOverlay'), tG = document.getElementById('timeGrid'), tMD = document.getElementById('timeModalDate'), cTB = document.getElementById('confirmTimeBtn');
 
 window.openTimeModal = function() {
   if (!selD) return;
@@ -197,7 +156,6 @@ window.openTimeModal = function() {
   selT = null;
   cTB.disabled = true;
   
-  // Все доступные слоты с шагом 30 минут с 10:00 до 20:00
   const allSlots = [];
   for (let h = 10; h < 20; h++) {
       for (let m = 0; m < 60; m += 30) {
@@ -230,73 +188,22 @@ window.openTimeModal = function() {
 window.closeTimeModal = () => tMO.classList.remove('active');
 tMO.addEventListener('click', e => { if (e.target === tMO) closeTimeModal(); });
 
-window.confirmTime = function() {
-  if (!selT) return;
-  sT.textContent = selT;
-  closeTimeModal();
-  openBookingForm();
-};
+window.confirmTime = () => { if (!selT) return; sT.textContent = selT; closeTimeModal(); openBookingForm(); };
 
 // ===== BOOKING FORM =====
-const bFO = document.getElementById('bookingFormOverlay');
-const bFI = document.getElementById('bookingFormInfo');
+const bFO = document.getElementById('bookingFormOverlay'), bFI = document.getElementById('bookingFormInfo');
 
-window.openBookingForm = function() {
-  const dateStr = `${selD} ${mn[cm]} ${cy}`;
-  bFI.innerHTML = `
-    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;padding:0.5rem 0;margin-bottom:0.5rem;border-bottom:1px solid var(--border);">
-      <span style="display:flex;align-items:center;gap:0.4rem;color:var(--text-secondary);font-size:0.85rem;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-          <line x1="16" y1="2" x2="16" y2="6"/>
-          <line x1="8" y1="2" x2="8" y2="6"/>
-          <line x1="3" y1="10" x2="21" y2="10"/>
-        </svg>
-        <strong style="color:var(--text);">${dateStr}</strong>
-      </span>
-      <span style="display:flex;align-items:center;gap:0.4rem;color:var(--text-secondary);font-size:0.85rem;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;">
-          <circle cx="12" cy="12" r="10"/>
-          <polyline points="12 6 12 12 16 14"/>
-        </svg>
-        <strong style="color:var(--text);">${selT}</strong>
-      </span>
-    </div>
-  `;
-  
-  // Загружаем услуги в форму
-  loadServicesForBooking();
-  
-  document.getElementById('clientName').value = '';
-  document.getElementById('clientPhone').value = '';
-  document.getElementById('bookingService').value = '';
-  selectedServiceId = null;
-  selectedServiceName = null;
-  bFO.classList.add('active');
-};
+window.openBookingForm = () => { bFI.textContent = 'Дата: ' + selD + ' ' + mn[cm] + ' ' + cy + ' • Время: ' + selT; document.getElementById('clientName').value = ''; document.getElementById('clientPhone').value = ''; bFO.classList.add('active'); };
 
 window.closeBookingForm = () => bFO.classList.remove('active');
 bFO.addEventListener('click', e => { if (e.target === bFO) closeBookingForm(); });
 
-// ===== ОТПРАВКА ЗАЯВКИ =====
-window.submitBooking = function() {
-  const name = document.getElementById('clientName').value.trim();
-  const phone = document.getElementById('clientPhone').value.trim();
-  const serviceSelect = document.getElementById('bookingService');
-  const serviceId = serviceSelect ? serviceSelect.value : '';
-  const serviceName = serviceSelect ? serviceSelect.options[serviceSelect.selectedIndex]?.text : '';
-  
-  if (!name || !phone) {
-    alert('Заполните имя и телефон.');
-    return;
-  }
-  
-  if (!serviceId) {
-    alert('Выберите услугу.');
-    return;
-  }
+window.submitBooking = () => {
+  const name = document.getElementById('clientName').value.trim(), phone = document.getElementById('clientPhone').value.trim();
+  if (!name || !phone) { alert('Заполните имя и телефон.'); return; }
   
   const dateStr = `${cy}-${String(cm + 1).padStart(2, '0')}-${String(selD).padStart(2, '0')}`;
+  const service = document.getElementById('bookingService')?.value || 'Не указана';
   
   fetch('/api/requests', {
     method: 'POST',
@@ -306,8 +213,7 @@ window.submitBooking = function() {
       phone: phone,
       date: dateStr,
       time: selT,
-      service: serviceName || 'Не указана',
-      serviceId: serviceId,
+      service: service,
       source: 'Сайт'
     })
   })
@@ -315,73 +221,16 @@ window.submitBooking = function() {
   .then(data => {
     if (data.success) {
       closeBookingForm();
+      mT.innerHTML = '✓ Запись подтверждена';
+      mD.innerHTML = '<b style=color:var(--accent)>' + name + '</b>, вы записаны на <b style=color:var(--accent)>' + selD + ' ' + mn[cm] + ' ' + cy + '</b> в <b style=color:var(--accent)>' + selT + '</b>.<br><br>Менеджер свяжется по телефону <b style=color:var(--accent)>' + phone + '</b>.';
+      mEx.innerHTML = ''; mB.textContent = 'Отлично'; mB.onclick = closeModal; mO.classList.add('active');
       
-      // Красивое подтверждение с иконками в стиле сайта
-      mT.innerHTML = `
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent3)" stroke-width="1.5" style="display:block;margin:0 auto 0.5rem;">
-          <polyline points="20 6 9 17 4 12"/>
-        </svg>
-        Запись подтверждена
-      `;
-      
-      mD.innerHTML = `
-        <div class="booking-confirm">
-          <div class="confirm-details">
-            <span class="detail-item">
-              <svg class="detail-icon" viewBox="0 0 24 24">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
-              <strong>${selD} ${mn[cm]} ${cy}</strong>
-            </span>
-            <span class="detail-item">
-              <svg class="detail-icon" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12 6 12 12 16 14"/>
-              </svg>
-              <strong>${selT}</strong>
-            </span>
-            <span class="detail-item">
-              <svg class="detail-icon" viewBox="0 0 24 24">
-                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-              </svg>
-              <strong>${serviceName || 'Не указана'}</strong>
-            </span>
-          </div>
-          <div class="confirm-message">
-            <span class="highlight">${name}</span>, вы записаны!<br>
-            Менеджер свяжется по телефону <span class="highlight">${phone}</span>
-          </div>
-        </div>
-      `;
-      
-      mEx.innerHTML = '';
-      mB.textContent = 'Отлично';
-      mB.onclick = closeModal;
-      mO.classList.add('active');
-      
-      // Обновляем занятые времена
       fetchOccupiedTimes(dateStr);
-      
-      // Сбрасываем выбранные дату и время
-      selD = null;
-      selT = null;
-      sD.textContent = '—';
-      sT.textContent = '—';
-      if (sService) sService.textContent = '—';
-      oTB.disabled = true;
-      document.querySelectorAll('.cal-day.selected').forEach(d => d.classList.remove('selected'));
     } else {
-      alert('Ошибка отправки заявки: ' + (data.message || 'Неизвестная ошибка'));
+      alert('Ошибка отправки заявки');
     }
   })
-  .catch((error) => {
-    console.error('Ошибка:', error);
-    alert('Ошибка сервера. Попробуйте позже.');
-  });
+  .catch(() => alert('Ошибка сервера'));
 };
 
 setTimeout(() => { document.getElementById('bonusBar').style.width = '30%'; }, 600);
@@ -511,10 +360,36 @@ async function loadServices() {
   }
 }
 
+// ===== ЗАГРУЗКА УСЛУГ ДЛЯ ФОРМЫ ЗАПИСИ =====
+async function loadServicesForBooking() {
+  try {
+    const response = await fetch('/api/services');
+    const services = await response.json();
+    const select = document.getElementById('bookingService');
+    if (select) {
+      if (services && services.length > 0) {
+        select.innerHTML = '<option value="">Выберите услугу</option>' + 
+          services.map(s => `<option value="${s.id}">${s.name} - ${s.price}</option>`).join('');
+      } else {
+        select.innerHTML = '<option value="">Услуги временно недоступны</option>';
+      }
+    }
+  } catch (error) {
+    console.error('Ошибка загрузки услуг для записи:', error);
+  }
+}
+
 // Загружаем данные при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
   loadPartners();
   loadPortfolio();
   loadServices();
   loadServicesForBooking();
+});
+
+// Также загружаем услуги при открытии формы записи
+document.addEventListener('click', function(e) {
+  if (e.target.id === 'openTimeModalBtn' || e.target.closest('#openTimeModalBtn')) {
+    // Уже загружено в openBookingForm
+  }
 });
