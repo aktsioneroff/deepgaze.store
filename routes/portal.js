@@ -160,7 +160,6 @@ router.delete('/services/delete/:id', checkSession, asyncHandler(portalControlle
 router.get('/checks', checkSession, asyncHandler(portalController.getChecks));
 router.get('/checks/add', checkSession, asyncHandler(portalController.getCheckForm));
 router.get('/checks/edit/:id', checkSession, asyncHandler(portalController.getCheckForm));
-router.get('/checks/view/:id', checkSession, asyncHandler(portalController.viewCheck));
 router.post('/checks/save', checkSession, asyncHandler(portalController.saveCheck));
 router.delete('/checks/delete/:id', checkSession, asyncHandler(portalController.deleteCheck));
 router.get('/checks/pdf/:id', checkSession, asyncHandler(portalController.generatePDF));
