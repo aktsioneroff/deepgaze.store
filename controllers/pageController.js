@@ -11,10 +11,12 @@ function loadEmployees() {
         }
         return [];
     } catch (error) {
+        console.error('Ошибка загрузки сотрудников:', error.message);
         return [];
     }
 }
 
+// ===== ПОЛЬЗОВАТЕЛИ (админ) =====
 const users = {
     'admin': { password: 'Seven7zsxa@@@', name: 'Администратор', role: 'admin' }
 };
@@ -28,7 +30,8 @@ const rolePermissions = {
         partners: { view: false, create: false, edit: false, delete: false },
         branches: { view: false, create: false, edit: false, delete: false },
         employees: { view: false, create: false, edit: false, delete: false },
-        referrals: { view: true, create: true, edit: true, delete: true }
+        referrals: { view: true, create: true, edit: true, delete: true },
+        checks: { view: true, create: true, edit: true, delete: true }
     },
     'Фотограф': {
         requests: { view: true, create: true, edit: true, delete: true },
@@ -37,7 +40,8 @@ const rolePermissions = {
         partners: { view: false, create: false, edit: false, delete: false },
         branches: { view: false, create: false, edit: false, delete: false },
         employees: { view: false, create: false, edit: false, delete: false },
-        referrals: { view: true, create: true, edit: true, delete: true }
+        referrals: { view: true, create: true, edit: true, delete: true },
+        checks: { view: true, create: true, edit: true, delete: true }
     },
     'Фотограф, старший': {
         requests: { view: true, create: true, edit: true, delete: true },
@@ -46,7 +50,8 @@ const rolePermissions = {
         partners: { view: false, create: false, edit: false, delete: false },
         branches: { view: false, create: false, edit: false, delete: false },
         employees: { view: false, create: false, edit: false, delete: false },
-        referrals: { view: true, create: true, edit: true, delete: true }
+        referrals: { view: true, create: true, edit: true, delete: true },
+        checks: { view: true, create: true, edit: true, delete: true }
     },
     'Управляющий': {
         requests: { view: true, create: true, edit: true, delete: true },
@@ -55,7 +60,8 @@ const rolePermissions = {
         partners: { view: false, create: false, edit: false, delete: false },
         branches: { view: false, create: false, edit: false, delete: false },
         employees: { view: false, create: false, edit: false, delete: false },
-        referrals: { view: true, create: true, edit: true, delete: true }
+        referrals: { view: true, create: true, edit: true, delete: true },
+        checks: { view: true, create: true, edit: true, delete: true }
     },
     'Директор': {
         requests: { view: true, create: true, edit: true, delete: true },
@@ -64,7 +70,8 @@ const rolePermissions = {
         partners: { view: true, create: true, edit: true, delete: true },
         branches: { view: false, create: false, edit: false, delete: false },
         employees: { view: true, create: true, edit: true, delete: true },
-        referrals: { view: true, create: true, edit: true, delete: true }
+        referrals: { view: true, create: true, edit: true, delete: true },
+        checks: { view: true, create: true, edit: true, delete: true }
     },
     'Генеральный директор': {
         requests: { view: true, create: true, edit: true, delete: true },
@@ -73,7 +80,8 @@ const rolePermissions = {
         partners: { view: true, create: true, edit: true, delete: true },
         branches: { view: true, create: true, edit: true, delete: true },
         employees: { view: true, create: true, edit: true, delete: true },
-        referrals: { view: true, create: true, edit: true, delete: true }
+        referrals: { view: true, create: true, edit: true, delete: true },
+        checks: { view: true, create: true, edit: true, delete: true }
     }
 };
 
@@ -89,13 +97,15 @@ function getUserPermissions(user) {
             partners: { view: true, create: true, edit: true, delete: true },
             branches: { view: true, create: true, edit: true, delete: true },
             employees: { view: true, create: true, edit: true, delete: true },
-            referrals: { view: true, create: true, edit: true, delete: true }
+            referrals: { view: true, create: true, edit: true, delete: true },
+            checks: { view: true, create: true, edit: true, delete: true }
         };
     }
     // Для сотрудников - по должности
     return rolePermissions[user.position] || null;
 }
 
+// ===== ГЛАВНАЯ СТРАНИЦА =====
 exports.getIndex = (req, res) => {
     res.render('pages/index', {
         title: 'DEEP GAZE — Студия макросъемки радужки глаза',
@@ -104,13 +114,14 @@ exports.getIndex = (req, res) => {
     });
 };
 
+// ===== СТРАНИЦА ВХОДА =====
 exports.getLogin = (req, res) => {
-    console.log('📌 GET /login - Проверка сессии...');
+    console.log('📌 GET login - Проверка сессии...');
     console.log(`  ├─ Session ID: ${req.session ? req.session.id : 'НЕТ'}`);
     console.log(`  ├─ User: ${req.session?.user?.login || 'НЕТ'}`);
     
     if (req.session && req.session.user) {
-        console.log('  └─ Пользователь уже авторизован, редирект на /dashboard');
+        console.log('  └─ Пользователь уже авторизован, редирект на dashboard');
         return res.redirect('/dashboard');
     }
     console.log('  └─ Показываем страницу логина');
@@ -120,8 +131,9 @@ exports.getLogin = (req, res) => {
     });
 };
 
+// ===== ВХОД =====
 exports.login = (req, res) => {
-    console.log('🔥🔥🔥 POST /login ВЫЗВАН! 🔥🔥🔥');
+    console.log('🔥🔥🔥 POST login ВЫЗВАН! 🔥🔥🔥');
     console.log('  ├─ Body:', req.body);
     
     const { login, password } = req.body;
@@ -195,13 +207,15 @@ exports.login = (req, res) => {
     res.redirect('/login?error=Неверный логин или пароль');
 };
 
+// ===== ВЫХОД =====
 exports.logout = (req, res) => {
-    console.log('📌 GET /logout - Выход');
+    console.log('📌 GET logout - Выход');
     req.session.destroy(() => {
         res.redirect('/');
     });
 };
 
+// ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
 exports.requireAuth = (req, res, next) => {
     console.log('📌 requireAuth - Проверка');
     console.log(`  ├─ Session ID: ${req.session ? req.session.id : 'НЕТ'}`);
@@ -243,8 +257,9 @@ exports.checkPermission = (module, action) => {
     };
 };
 
+// ===== ДАШБОРД =====
 exports.getDashboard = (req, res) => {
-    console.log('📌 GET /dashboard - Отображение');
+    console.log('📌 GET dashboard - Отображение');
     const permissions = getUserPermissions(req.session.user);
     res.render('pages/dashboard', {
         title: 'Панель управления — DEEP GAZE',
@@ -254,6 +269,7 @@ exports.getDashboard = (req, res) => {
     });
 };
 
+// ===== ЗАГЛУШКА ДЛЯ ПОРТАЛА =====
 exports.getPortalPlaceholder = (req, res) => {
     const pageMap = {
         '/portal/referrals': { title: 'Реферальная система', icon: '🎯' }
@@ -266,4 +282,17 @@ exports.getPortalPlaceholder = (req, res) => {
         pageTitle: page.title,
         pageIcon: page.icon
     });
+};
+
+// ===== ЭКСПОРТ =====
+module.exports = {
+    getIndex: exports.getIndex,
+    getLogin: exports.getLogin,
+    login: exports.login,
+    logout: exports.logout,
+    requireAuth: exports.requireAuth,
+    checkPermission: exports.checkPermission,
+    getDashboard: exports.getDashboard,
+    getPortalPlaceholder: exports.getPortalPlaceholder,
+    getUserPermissions: getUserPermissions
 };
