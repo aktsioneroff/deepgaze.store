@@ -1024,17 +1024,8 @@ exports.deleteCheck = async (req, res) => {
 };
 
 // ===== АВТОРИЗАЦИЯ ДЛЯ ПОРТАЛА =====
-exports.getLogin = (req, res) => {
-    if (req.session.user) {
-        return res.redirect('/dashboard');
-    }
-    res.render('pages/login', {
-        title: 'Вход в портал — DEEP GAZE',
-        error: req.query.error || null
-    });
-};
-
-exports.login = async (req, res) => {
+// Функции должны быть определены ДО module.exports
+async function loginUser(req, res) {
     const { login, password } = req.body;
     const employees = await readData(EMPLOYEES_FILE);
     
@@ -1075,24 +1066,24 @@ exports.login = async (req, res) => {
     }
     
     res.redirect('/login?error=Неверный логин или пароль');
-};
+}
 
-exports.logout = (req, res) => {
+function logoutUser(req, res) {
     req.session.destroy(() => {
         res.redirect('/');
     });
-};
+}
 
-exports.requireAuth = (req, res, next) => {
+function requireAuth(req, res, next) {
     if (req.session.user) {
         next();
     } else {
         res.redirect('/login?error=Требуется авторизация');
     }
-};
+}
 
 // ===== ГЛАВНАЯ СТРАНИЦА =====
-exports.getIndex = async (req, res) => {
+async function getIndex(req, res) {
     const services = await readData(SERVICES_FILE);
     const portfolio = await readData(PORTFOLIO_FILE);
     
@@ -1103,74 +1094,85 @@ exports.getIndex = async (req, res) => {
         portfolio: portfolio,
         error: null
     });
-};
+}
+
+// ===== СТРАНИЦА ВХОДА =====
+function getLoginPage(req, res) {
+    if (req.session.user) {
+        return res.redirect('/dashboard');
+    }
+    res.render('pages/login', {
+        title: 'Вход в портал — DEEP GAZE',
+        error: req.query.error || null
+    });
+}
 
 // ===== ЭКСПОРТ ВСЕХ ФУНКЦИЙ =====
 module.exports = {
     // Авторизация
-    getLogin,
-    login,
-    logout,
-    requireAuth,
+    getLogin: getLoginPage,
+    login: loginUser,
+    logout: logoutUser,
+    requireAuth: requireAuth,
     
     // Главная
-    getIndex,
+    getIndex: getIndex,
     
     // Дашборд
-    getDashboard,
+    getDashboard: exports.getDashboard,
     
     // Заглушка
-    getPlaceholder,
+    getPlaceholder: exports.getPlaceholder,
     
     // Рефералы
-    getReferrals,
-    getReferralForm,
-    saveReferral,
-    deleteReferral,
-    searchReferral,
-    addBonus,
-    subtractBonus,
+    getReferrals: exports.getReferrals,
+    getReferralForm: exports.getReferralForm,
+    saveReferral: exports.saveReferral,
+    deleteReferral: exports.deleteReferral,
+    searchReferral: exports.searchReferral,
+    addBonus: exports.addBonus,
+    subtractBonus: exports.subtractBonus,
     
     // Заявки
-    getRequests,
-    getRequestForm,
-    saveRequest,
-    deleteRequest,
-    updateRequestStatus,
+    getRequests: exports.getRequests,
+    getRequestForm: exports.getRequestForm,
+    saveRequest: exports.saveRequest,
+    deleteRequest: exports.deleteRequest,
+    updateRequestStatus: exports.updateRequestStatus,
     
     // Филиалы
-    getBranches,
-    getBranchForm,
-    saveBranch,
-    deleteBranch,
+    getBranches: exports.getBranches,
+    getBranchForm: exports.getBranchForm,
+    saveBranch: exports.saveBranch,
+    deleteBranch: exports.deleteBranch,
     
     // Сотрудники
-    getEmployees,
-    getEmployeeForm,
-    saveEmployee,
-    deleteEmployee,
+    getEmployees: exports.getEmployees,
+    getEmployeeForm: exports.getEmployeeForm,
+    saveEmployee: exports.saveEmployee,
+    deleteEmployee: exports.deleteEmployee,
     
     // Партнёры
-    getPartners,
-    getPartnerForm,
-    savePartner,
-    deletePartner,
+    getPartners: exports.getPartners,
+    getPartnerForm: exports.getPartnerForm,
+    savePartner: exports.savePartner,
+    deletePartner: exports.deletePartner,
     
     // Портфолио
-    getPortfolio,
-    getPortfolioForm,
-    savePortfolio,
-    deletePortfolio,
+    getPortfolio: exports.getPortfolio,
+    getPortfolioForm: exports.getPortfolioForm,
+    savePortfolio: exports.savePortfolio,
+    deletePortfolio: exports.deletePortfolio,
     
     // Услуги
-    getServices,
-    getServiceForm,
-    saveService,
-    deleteService,
+    getServices: exports.getServices,
+    getServiceForm: exports.getServiceForm,
+    saveService: exports.saveService,
+    deleteService: exports.deleteService,
     
     // Чеки
-    getChecks,
-    getCheckForm,
-    saveCheck,
-    deleteCheck
+    getChecks: exports.getChecks,
+    getCheckForm: exports.getCheckForm,
+    saveCheck: exports.saveCheck,
+    deleteCheck: exports.deleteCheck
 };
