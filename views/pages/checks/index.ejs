@@ -7,15 +7,501 @@
     <link rel="icon" type="image/x-icon" href="/ico/favicon.ico">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/main.css">
-    <link rel="stylesheet" href="/css/portal.css">
+    <style>
+        /* ===== ПОРТАЛ СТИЛИ ===== */
+        :root {
+            --portal-bg: #0a0c12;
+            --portal-surface: #11141c;
+            --portal-border: rgba(255, 255, 255, 0.06);
+            --portal-text: #e8eaef;
+            --portal-text-secondary: #7c8190;
+            --portal-text-muted: #484c58;
+            --portal-accent: #c8a45c;
+            --portal-accent2: #8b6fcf;
+            --portal-radius: 0.75rem;
+            --portal-transition: 0.35s cubic-bezier(0.25, 0.8, 0.25, 1.2);
+        }
+
+        .portal-container {
+            display: flex;
+            min-height: 100vh;
+            background: var(--portal-bg);
+        }
+
+        /* ===== САЙДБАР ===== */
+        .portal-sidebar {
+            width: 260px;
+            background: var(--portal-surface);
+            border-right: 1px solid var(--portal-border);
+            padding: 1.5rem 1rem;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            overflow-y: auto;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .portal-sidebar .logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.4rem;
+            letter-spacing: 0.04em;
+            padding: 0 0.5rem 1.5rem 0.5rem;
+            border-bottom: 1px solid var(--portal-border);
+            margin-bottom: 1.5rem;
+        }
+
+        .portal-sidebar .logo span { color: var(--portal-accent); }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.7rem 1rem;
+            border-radius: var(--portal-radius);
+            color: var(--portal-text-secondary);
+            text-decoration: none;
+            transition: var(--portal-transition);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .sidebar-nav a:hover {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--portal-text);
+        }
+
+        .sidebar-nav a.active {
+            background: rgba(200, 164, 92, 0.1);
+            color: var(--portal-accent);
+            border: 1px solid rgba(200, 164, 92, 0.2);
+        }
+
+        .sidebar-nav a .icon {
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        .sidebar-nav .nav-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--portal-text-muted);
+            padding: 0.5rem 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .sidebar-user {
+            padding: 1rem;
+            border-top: 1px solid var(--portal-border);
+            margin-top: auto;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--portal-surface);
+        }
+
+        .sidebar-user .user-name {
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .sidebar-user .user-role {
+            font-size: 0.7rem;
+            color: var(--portal-text-muted);
+        }
+
+        .sidebar-user .logout-btn {
+            display: inline-block;
+            margin-top: 0.5rem;
+            padding: 0.3rem 1rem;
+            border-radius: 2rem;
+            background: transparent;
+            border: 1px solid var(--portal-border);
+            color: var(--portal-text-secondary);
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: var(--portal-transition);
+            text-decoration: none;
+        }
+
+        .sidebar-user .logout-btn:hover {
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+
+        /* ===== ОСНОВНОЙ КОНТЕНТ ===== */
+        .portal-content {
+            margin-left: 260px;
+            flex: 1;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .portal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .portal-header h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        /* ===== СТАТИСТИКА ===== */
+        .portal-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--portal-surface);
+            border: 1px solid var(--portal-border);
+            border-radius: var(--portal-radius);
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-card .stat-number {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--portal-accent);
+        }
+
+        .stat-card .stat-label {
+            color: var(--portal-text-secondary);
+            font-size: 0.8rem;
+            margin-top: 0.3rem;
+        }
+
+        /* ===== ТАБЛИЦА ===== */
+        .portal-table-wrapper {
+            background: var(--portal-surface);
+            border: 1px solid var(--portal-border);
+            border-radius: var(--portal-radius);
+            overflow: hidden;
+        }
+
+        .portal-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .portal-table thead {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .portal-table th {
+            padding: 0.8rem 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--portal-text-muted);
+            border-bottom: 1px solid var(--portal-border);
+        }
+
+        .portal-table td {
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid var(--portal-border);
+            color: var(--portal-text-secondary);
+        }
+
+        .portal-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .portal-table .id-badge {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.7rem;
+            color: var(--portal-text-muted);
+            background: rgba(255, 255, 255, 0.04);
+            padding: 0.2rem 0.6rem;
+            border-radius: 0.3rem;
+        }
+
+        .portal-table .status-badge {
+            padding: 0.2rem 0.8rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-оплачен,
+        .status-paid {
+            background: rgba(46, 204, 113, 0.15);
+            color: #2ecc71;
+        }
+
+        .status-черновик,
+        .status-draft {
+            background: rgba(241, 196, 15, 0.15);
+            color: #f1c40f;
+        }
+
+        .status-отменен,
+        .status-cancelled {
+            background: rgba(231, 76, 60, 0.15);
+            color: #e74c3c;
+        }
+
+        .portal-table .check-total {
+            font-weight: 700;
+            color: var(--portal-accent);
+        }
+
+        .portal-table .actions-cell {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-icon {
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.4rem;
+            border: 1px solid var(--portal-border);
+            background: transparent;
+            color: var(--portal-text-secondary);
+            cursor: pointer;
+            transition: var(--portal-transition);
+            font-size: 0.8rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .btn-icon:hover {
+            border-color: var(--portal-accent);
+            color: var(--portal-accent);
+        }
+
+        .btn-icon.danger:hover {
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+
+        /* ===== ПУСТОЕ СОСТОЯНИЕ ===== */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+        }
+
+        .empty-state .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state p {
+            color: var(--portal-text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        /* ===== КНОПКИ ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.4rem;
+            border-radius: 3rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--portal-transition);
+            border: none;
+            font-family: 'Inter', sans-serif;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--portal-accent);
+            color: #0a0c12;
+        }
+
+        .btn-primary:hover {
+            background: #d4b46e;
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--portal-text);
+            border: 1px solid var(--portal-border);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--portal-accent);
+            color: var(--portal-accent);
+        }
+
+        /* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 101;
+            background: var(--portal-surface);
+            border: 1px solid var(--portal-border);
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.8rem;
+            color: var(--portal-text);
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-toggle {
+                display: block;
+            }
+
+            .portal-sidebar {
+                transform: translateX(-100%);
+            }
+
+            .portal-sidebar.open {
+                transform: translateX(0);
+            }
+
+            .portal-content {
+                margin-left: 0;
+                padding: 1rem;
+                padding-top: 4rem;
+            }
+
+            .portal-table-wrapper {
+                overflow-x: auto;
+            }
+
+            .portal-table {
+                font-size: 0.75rem;
+                min-width: 600px;
+            }
+
+            .portal-table th,
+            .portal-table td {
+                padding: 0.5rem 0.6rem;
+            }
+
+            .portal-stats {
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                gap: 0.6rem;
+            }
+
+            .stat-card .stat-number {
+                font-size: 1.4rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .portal-header h1 {
+                font-size: 1.3rem;
+            }
+
+            .portal-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .portal-actions {
+                width: 100%;
+            }
+
+            .portal-actions .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="grid-bg"></div>
-    
+    <!-- Кнопка для мобильного меню -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+
     <div class="portal-container">
-        <%- include('../../partials/sidebar', { user: user, activePage: activePage }) %>
-        
-        <div class="portal-content">
+        <!-- Сайдбар -->
+        <aside class="portal-sidebar" id="sidebar">
+            <div class="logo">DEEP<span>.</span>GAZE</div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-label">Портал</div>
+                <a href="/dashboard" class="<%= activePage === 'dashboard' ? 'active' : '' %>">
+                    <span class="icon">📊</span> Дашборд
+                </a>
+                
+                <div class="nav-label">Управление</div>
+                <% if (permissions && permissions.requests && permissions.requests.view) { %>
+                    <a href="/requests" class="<%= activePage === '/requests' ? 'active' : '' %>">
+                        <span class="icon">📋</span> Заявки
+                    </a>
+                <% } %>
+                <% if (permissions && permissions.services && permissions.services.view) { %>
+                    <a href="/services" class="<%= activePage === '/services' ? 'active' : '' %>">
+                        <span class="icon">💎</span> Услуги
+                    </a>
+                <% } %>
+                <% if (permissions && permissions.portfolio && permissions.portfolio.view) { %>
+                    <a href="/portfolio" class="<%= activePage === '/portfolio' ? 'active' : '' %>">
+                        <span class="icon">🖼️</span> Портфолио
+                    </a>
+                <% } %>
+                <% if (permissions && permissions.partners && permissions.partners.view) { %>
+                    <a href="/partners" class="<%= activePage === '/partners' ? 'active' : '' %>">
+                        <span class="icon">🤝</span> Партнёры
+                    </a>
+                <% } %>
+                <% if (permissions && permissions.branches && permissions.branches.view) { %>
+                    <a href="/branches" class="<%= activePage === '/branches' ? 'active' : '' %>">
+                        <span class="icon">📍</span> Филиалы
+                    </a>
+                <% } %>
+                <% if (permissions && permissions.employees && permissions.employees.view) { %>
+                    <a href="/employees" class="<%= activePage === '/employees' ? 'active' : '' %>">
+                        <span class="icon">👤</span> Сотрудники
+                    </a>
+                <% } %>
+                <% if (permissions && permissions.referrals && permissions.referrals.view) { %>
+                    <a href="/portal/referrals" class="<%= activePage === '/portal/referrals' ? 'active' : '' %>">
+                        <span class="icon">🎯</span> Рефералы
+                    </a>
+                <% } %>
+                <% if (permissions && permissions.checks && permissions.checks.view) { %>
+                    <a href="/checks" class="<%= activePage === '/checks' ? 'active' : '' %>">
+                        <span class="icon">💳</span> Чеки
+                    </a>
+                <% } %>
+            </nav>
+
+            <div class="sidebar-user">
+                <div class="user-name"><%= user.name %></div>
+                <div class="user-role"><%= user.position || user.role %></div>
+                <a href="/logout" class="logout-btn">🚪 Выйти</a>
+            </div>
+        </aside>
+
+        <!-- Основной контент -->
+        <main class="portal-content">
             <header class="portal-header">
                 <h1>💳 Чеки</h1>
                 <div class="portal-actions">
@@ -25,16 +511,19 @@
                 </div>
             </header>
 
+            <!-- Статистика -->
             <div class="portal-stats">
                 <div class="stat-card">
-                    <div class="stat-number"><%= checks.length %></div>
+                    <div class="stat-number"><%= checks ? checks.length : 0 %></div>
                     <div class="stat-label">Всего чеков</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-number">
                         <% 
                             let total = 0;
-                            checks.forEach(c => { total += (c.total || c.amount || 0); });
+                            if (checks && checks.length > 0) {
+                                checks.forEach(c => { total += (c.amount || 0); });
+                            }
                         %>
                         <%= total.toLocaleString() %> ₽
                     </div>
@@ -43,7 +532,10 @@
                 <div class="stat-card">
                     <div class="stat-number">
                         <% 
-                            let paidCount = checks.filter(c => c.status === 'Оплачен').length;
+                            let paidCount = 0;
+                            if (checks && checks.length > 0) {
+                                paidCount = checks.filter(c => c.status === 'Оплачен').length;
+                            }
                         %>
                         <%= paidCount %>
                     </div>
@@ -51,66 +543,84 @@
                 </div>
             </div>
 
+            <!-- Таблица -->
             <div class="portal-table-wrapper">
                 <table class="portal-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Клиент</th>
+                            <th>№</th>
+                            <th>Имя клиента</th>
+                            <th>Телефон</th>
                             <th>Услуга</th>
-                            <th>Цена</th>
-                            <th>Итого</th>
-                            <th>Метод</th>
+                            <th>К оплате</th>
                             <th>Статус</th>
-                            <th>Дата</th>
                             <th>Действия</th>
                         </tr>
                     </thead>
                     <tbody>
                         <% if (checks && checks.length > 0) { %>
-                            <% checks.forEach(check => { %>
+                            <% checks.forEach((check, index) => { %>
                                 <tr>
-                                    <td><span class="id-badge">#<%= shortId ? shortId(check.id) : check.id.substr(0, 8) %></span></td>
-                                    <td><strong><%= check.clientName || check.client || 'Не указан' %></strong></td>
+                                    <td><span class="id-badge">#<%= index + 1 %></span></td>
+                                    <td><strong><%= check.clientName || 'Не указан' %></strong></td>
+                                    <td><%= check.phone || '—' %></td>
                                     <td><%= check.serviceName || 'Не указана' %></td>
-                                    <td><%= (check.servicePrice || 0).toLocaleString() %> ₽</td>
-                                    <td><span class="check-total"><%= (check.total || check.amount || 0).toLocaleString() %> ₽</span></td>
-                                    <td><%= check.paymentMethod || 'Не указан' %></td>
+                                    <td><span class="check-total"><%= (check.amount || 0).toLocaleString() %> ₽</span></td>
                                     <td>
                                         <span class="status-badge status-<%= (check.status || 'черновик').toLowerCase() %>">
                                             <%= check.status || 'Черновик' %>
                                         </span>
                                     </td>
-                                    <td><%= new Date(check.createdAt).toLocaleDateString('ru-RU') %></td>
-                                    <td class="actions-cell">
-                                        <% if (permissions && permissions.checks && permissions.checks.edit) { %>
-                                            <a href="/checks/<%= check.id %>/edit" class="btn-icon" title="Редактировать">✏️</a>
-                                        <% } %>
-                                        <% if (permissions && permissions.checks && permissions.checks.delete) { %>
-                                            <button onclick="deleteCheck('<%= check.id %>')" class="btn-icon" title="Удалить">🗑️</button>
-                                        <% } %>
+                                    <td>
+                                        <div class="actions-cell">
+                                            <% if (permissions && permissions.checks && permissions.checks.edit) { %>
+                                                <a href="/checks/<%= check.id %>/edit" class="btn-icon" title="Редактировать">✏️</a>
+                                            <% } %>
+                                            <% if (permissions && permissions.checks && permissions.checks.delete) { %>
+                                                <button onclick="deleteCheck('<%= check.id %>')" class="btn-icon danger" title="Удалить">🗑️</button>
+                                            <% } %>
+                                        </div>
                                     </td>
                                 </tr>
                             <% }) %>
                         <% } else { %>
                             <tr>
-                                <td colspan="9" class="empty-state">
-                                    <div class="empty-icon">📭</div>
-                                    <p>Нет созданных чеков</p>
-                                    <% if (permissions && permissions.checks && permissions.checks.create) { %>
-                                        <a href="/checks/new" class="btn btn-primary">Создать первый чек</a>
-                                    <% } %>
+                                <td colspan="7">
+                                    <div class="empty-state">
+                                        <div class="empty-icon">📭</div>
+                                        <p>Нет созданных чеков</p>
+                                        <% if (permissions && permissions.checks && permissions.checks.create) { %>
+                                            <a href="/checks/new" class="btn btn-primary">Создать первый чек</a>
+                                        <% } %>
+                                    </div>
                                 </td>
                             </tr>
                         <% } %>
                     </tbody>
                 </table>
             </div>
-        </div>
+        </main>
     </div>
 
-    <script src="/js/portal.js"></script>
     <script>
+        // Мобильное меню
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        }
+
+        // Закрытие сайдбара по клику вне
+        document.addEventListener('click', function(e) {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.querySelector('.sidebar-toggle');
+            if (window.innerWidth <= 768) {
+                if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
+                    sidebar.classList.remove('open');
+                }
+            }
+        });
+
+        // Удаление чека
         function deleteCheck(id) {
             if (confirm('Вы уверены, что хотите удалить этот чек?')) {
                 fetch(`/checks/${id}`, {
