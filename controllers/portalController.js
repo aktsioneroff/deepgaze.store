@@ -1,14 +1,67 @@
-const server = require('../server');
 const fs = require('fs');
 const path = require('path');
 
-// ===== ИСПОЛЬЗУЕМ ФУНКЦИИ ИЗ SERVER.JS =====
+// ===== ПРЯМОЕ ПОДКЛЮЧЕНИЕ S3 =====
+const { S3Client, HeadBucketCommand, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+
+const s3Config = {
+    endpoint: 'https://s3.twcstorage.ru',
+    region: 'ru-1',
+    credentials: {
+        accessKeyId: 'WH5JV70A76ML0WY9VWJM',
+        secretAccessKey: 'EtN37sHNRkLs5dPgJzkB2TQFUW8mSE81gDIFe8DP'
+    },
+    forcePathStyle: true
+};
+
+const BUCKET_NAME = 'b84d36c2-5e58-406e-9d3d-5754fe0dda39';
+const s3Client = new S3Client(s3Config);
+
+async function readS3(key) {
+    try {
+        const result = await s3Client.send(new GetObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: key
+        }));
+        const body = await result.Body.transformToString();
+        return JSON.parse(body);
+    } catch (error) {
+        if (error.name === 'NoSuchKey') return null;
+        return null;
+    }
+}
+
+async function writeS3(key, data) {
+    try {
+        await s3Client.send(new PutObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: key,
+            Body: JSON.stringify(data, null, 2),
+            ContentType: 'application/json'
+        }));
+        return true;
+    } catch (error) {
+        console.error('Ошибка записи S3:', error.message);
+        return false;
+    }
+}
+
 async function readData(fileName) {
-    return await server.readData(fileName);
+    const data = await readS3(`data/${fileName}`);
+    if (data) {
+        console.log(`📖 Загружено: ${fileName}`);
+        return data;
+    }
+    console.log(`📄 Новый файл: ${fileName}`);
+    return [];
 }
 
 async function writeData(fileName, data) {
-    return await server.writeData(fileName, data);
+    const result = await writeS3(`data/${fileName}`, data);
+    if (result) {
+        console.log(`💾 Сохранено: ${fileName}`);
+    }
+    return result;
 }
 
 // ===== КОНСТАНТЫ =====
@@ -103,7 +156,7 @@ function getUserPermissions(user) {
     return rolePermissions[user.position] || null;
 }
 
-// ===== ВСЕ МЕТОДЫ =====
+// ===== ДАШБОРД =====
 exports.getDashboard = async (req, res) => {
     const requests = await readData(REQUESTS_FILE);
     const permissions = getUserPermissions(req.session.user);
@@ -170,7 +223,7 @@ exports.getPlaceholder = (req, res) => {
     });
 };
 
-// ===== РЕФЕРАЛЫ =====
+// ===== РЕФЕРАЛЬНАЯ СИСТЕМА =====
 exports.getReferrals = async (req, res) => {
     const referrals = await readData(REFERRALS_FILE);
     const permissions = getUserPermissions(req.session.user);
