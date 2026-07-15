@@ -7,7 +7,9 @@ require('dotenv').config();
 
 const s3 = require('./config/s3');
 
-// ===== СОЗДАНИЕ ПАПОК (только для сессий) =====
+console.log('🚀 Запуск сервера...');
+
+// ===== СОЗДАНИЕ ПАПКИ СЕССИЙ =====
 const SESSIONS_DIR = path.join(__dirname, 'sessions');
 
 if (!fs.existsSync(SESSIONS_DIR)) {
@@ -30,19 +32,13 @@ console.log(`  ├─ Access Key: ${s3.s3Config.credentials.accessKeyId.substrin
 console.log(`  └─ Region: ${s3.s3Config.region}`);
 console.log('📦 ============================\n');
 
-// Проверяем подключение при старте
+// Проверяем подключение
 (async () => {
-    await s3.testS3Connection();
-    
-    if (s3.s3Connected) {
-        // Проверяем существующие файлы
-        const files = await s3.listS3Files('data/');
-        if (files.length > 0) {
-            console.log(`📁 Найдено файлов в S3: ${files.length}`);
-            console.log(`  └─ ${files.join(', ')}`);
-        } else {
-            console.log('📄 В S3 нет файлов. Они будут созданы при первом сохранении.');
-        }
+    try {
+        await s3.testS3Connection();
+        console.log(`📌 S3 статус: ${s3.s3Connected ? '✅ Подключен' : '❌ Недоступен'}`);
+    } catch (error) {
+        console.error('❌ Ошибка при проверке S3:', error.message);
     }
 })();
 
@@ -93,19 +89,10 @@ app.use((req, res, next) => {
 });
 
 // ===== МАРШРУТЫ =====
+console.log('📌 Загрузка маршрутов...');
 const indexRoutes = require('./routes/index');
 app.use('/', indexRoutes);
-
-// ===== API СТАТУС S3 =====
-app.get('/api/s3-status', (req, res) => {
-    res.json({
-        connected: s3.s3Connected,
-        timestamp: new Date().toISOString(),
-        bucket: s3.BUCKET_NAME,
-        endpoint: s3.s3Config.endpoint,
-        region: s3.s3Config.region
-    });
-});
+console.log('✅ Маршруты загружены');
 
 // ===== 404 =====
 app.use((req, res) => {
@@ -115,9 +102,18 @@ app.use((req, res) => {
     });
 });
 
+// ===== ЗАПУСК =====
 app.listen(PORT, () => {
-    console.log(`\n🚀 Сервер запущен на http://localhost:${PORT}`);
+    console.log(`\n🚀 Сервер успешно запущен на http://localhost:${PORT}`);
     console.log(`📌 S3 статус: ${s3.s3Connected ? '✅ Подключен' : '❌ Локальное хранилище'}`);
     console.log('📌 Войдите под admin / admin123');
-    console.log('📌 Проверить S3: /api/s3-status');
+});
+
+// Обработка ошибок
+process.on('uncaughtException', (error) => {
+    console.error('❌ Uncaught Exception:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('❌ Unhandled Rejection:', reason);
 });
