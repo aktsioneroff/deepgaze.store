@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="/css/portal.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
     <div class="grid-bg"></div>
@@ -18,360 +17,85 @@
         
         <div class="portal-content">
             <header class="portal-header">
-                <h1>Чеки</h1>
-                <div class="portal-actions">
-                    <% if (permissions && permissions.checks && permissions.checks.create) { %>
-                        <a href="/checks/new" class="btn btn-primary">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                            </svg>
-                            Создать чек
-                        </a>
-                    <% } %>
-                </div>
+                <h1><%= isEdit ? '✏️ Редактирование чека' : '➕ Создание чека' %></h1>
+                <a href="/checks" class="btn btn-outline">← Назад к списку</a>
             </header>
 
-            <!-- Статистика -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number"><%= checks ? checks.length : 0 %></div>
-                    <div class="stat-label">Всего чеков</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">
-                        <% 
-                            let total = 0;
-                            if (checks && checks.length > 0) {
-                                checks.forEach(c => { total += (c.amount || 0); });
-                            }
-                        %>
-                        <%= total.toLocaleString() %> ₽
-                    </div>
-                    <div class="stat-label">Общая сумма</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">
-                        <% 
-                            let paidCount = 0;
-                            if (checks && checks.length > 0) {
-                                paidCount = checks.filter(c => c.status === 'Оплачен').length;
-                            }
-                        %>
-                        <%= paidCount %>
-                    </div>
-                    <div class="stat-label">Оплачено</div>
-                </div>
-            </div>
+            <div class="form-container">
+                <form action="/checks/save" method="POST" id="checkForm">
+                    <% if (isEdit && check) { %>
+                        <input type="hidden" name="id" value="<%= check.id %>">
+                    <% } %>
 
-            <!-- Таблица -->
-            <div class="table-wrapper">
-                <table class="portal-table">
-                    <thead>
-                        <tr>
-                            <th>№</th>
-                            <th>Имя клиента</th>
-                            <th>Телефон</th>
-                            <th>Услуга</th>
-                            <th>К оплате</th>
-                            <th>Статус</th>
-                            <th>Действия</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% if (checks && checks.length > 0) { %>
-                            <% checks.forEach((check, index) => { %>
-                                <tr>
-                                    <td><span class="id-badge">#<%= index + 1 %></span></td>
-                                    <td><strong><%= check.clientName || 'Не указан' %></strong></td>
-                                    <td><%= check.phone || '—' %></td>
-                                    <td><%= check.serviceName || 'Не указана' %></td>
-                                    <td><span class="amount"><%= (check.amount || 0).toLocaleString() %> ₽</span></td>
-                                    <td>
-                                        <span class="status-badge status-<%= (check.status || 'черновик').toLowerCase() %>">
-                                            <%= check.status || 'Черновик' %>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="actions-cell">
-                                            <button onclick="printCheck('<%= check.id %>')" class="btn-icon" title="Печать">
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                    <polyline points="6 9 6 2 18 2 18 9"/>
-                                                    <path d="M18 9H6M18 9V16H6V9M18 16H22V12H18M6 16H2V12H6"/>
-                                                    <rect x="8" y="13" width="8" height="4" rx="1"/>
-                                                </svg>
-                                            </button>
-                                            <% if (permissions && permissions.checks && permissions.checks.edit) { %>
-                                                <a href="/checks/<%= check.id %>/edit" class="btn-icon" title="Редактировать">
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                                    </svg>
-                                                </a>
-                                            <% } %>
-                                            <% if (permissions && permissions.checks && permissions.checks.delete) { %>
-                                                <button onclick="deleteCheck('<%= check.id %>')" class="btn-icon danger" title="Удалить">
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                        <polyline points="3 6 5 6 21 6"/>
-                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                                                    </svg>
-                                                </button>
-                                            <% } %>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <% }) %>
-                        <% } else { %>
-                            <tr>
-                                <td colspan="7">
-                                    <div class="empty-state">
-                                        <div class="empty-icon">📭</div>
-                                        <p>Нет созданных чеков</p>
-                                        <% if (permissions && permissions.checks && permissions.checks.create) { %>
-                                            <a href="/checks/new" class="btn btn-primary">Создать первый чек</a>
-                                        <% } %>
-                                    </div>
-                                </td>
-                            </tr>
-                        <% } %>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+                    <div class="form-group">
+                        <label for="clientName">Имя клиента *</label>
+                        <input type="text" id="clientName" name="clientName" 
+                               class="form-input"
+                               value="<%= check ? check.clientName : '' %>" 
+                               placeholder="Введите имя клиента" required>
+                    </div>
 
-    <!-- Модальное окно для печати чека -->
-    <div class="modal-overlay" id="printModal">
-        <div class="modal" style="max-width: 500px;">
-            <button class="modal-close" onclick="closePrintModal()">×</button>
-            <h3 style="text-align: center; font-family: 'Space Grotesk', sans-serif;">🧾 Чек</h3>
-            <div id="printContent" style="padding: 1rem 0;"></div>
-            <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem; flex-wrap: wrap;">
-                <button onclick="downloadPDF()" class="btn btn-primary">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.3rem;">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="7 10 12 15 17 10"/>
-                        <line x1="12" y1="15" x2="12" y2="3"/>
-                    </svg>
-                    Скачать PDF
-                </button>
-                <button onclick="window.print()" class="btn btn-outline">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.3rem;">
-                        <polyline points="6 9 6 2 18 2 18 9"/>
-                        <path d="M18 9H6M18 9V16H6V9M18 16H22V12H18M6 16H2V12H6"/>
-                        <rect x="8" y="13" width="8" height="4" rx="1"/>
-                    </svg>
-                    Распечатать
-                </button>
-                <button onclick="closePrintModal()" class="btn btn-outline">Закрыть</button>
+                    <div class="form-group">
+                        <label for="phone">Телефон</label>
+                        <input type="text" id="phone" name="phone" 
+                               class="form-input"
+                               value="<%= check ? check.phone : '' %>" 
+                               placeholder="+7 (999) 123-45-67">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="serviceId">Услуга *</label>
+                        <select id="serviceId" name="serviceId" class="form-select" required>
+                            <option value="">Выберите услугу</option>
+                            <% if (services && services.length > 0) { %>
+                                <% services.forEach(service => { %>
+                                    <option value="<%= service.id %>" 
+                                        <%= (check && check.serviceId === service.id) ? 'selected' : '' %>>
+                                        <%= service.name %> — <%= service.price %>
+                                    </option>
+                                <% }) %>
+                            <% } %>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="amount">Сумма (₽) *</label>
+                        <input type="number" id="amount" name="amount" 
+                               class="form-input"
+                               value="<%= check ? check.amount : '' %>" 
+                               placeholder="Введите сумму" required step="0.01" min="0">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="paymentMethod">Метод оплаты</label>
+                        <select id="paymentMethod" name="paymentMethod" class="form-select">
+                            <option value="Наличные" <%= (check && check.paymentMethod === 'Наличные') ? 'selected' : '' %>>Наличные</option>
+                            <option value="Карта" <%= (check && check.paymentMethod === 'Карта') ? 'selected' : '' %>>Карта</option>
+                            <option value="Перевод" <%= (check && check.paymentMethod === 'Перевод') ? 'selected' : '' %>>Перевод</option>
+                            <option value="Бонусы" <%= (check && check.paymentMethod === 'Бонусы') ? 'selected' : '' %>>Бонусы</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="status">Статус</label>
+                        <select id="status" name="status" class="form-select">
+                            <option value="Оплачен" <%= (check && check.status === 'Оплачен') ? 'selected' : '' %>>Оплачен</option>
+                            <option value="Черновик" <%= (check && check.status === 'Черновик') ? 'selected' : '' %>>Черновик</option>
+                            <option value="Отменен" <%= (check && check.status === 'Отменен') ? 'selected' : '' %>>Отменен</option>
+                        </select>
+                    </div>
+
+                    <div class="form-actions">
+                        <a href="/checks" class="btn btn-outline">Отмена</a>
+                        <button type="submit" class="btn btn-primary">
+                            <%= isEdit ? '💾 Сохранить' : '✅ Создать чек' %>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
     <script src="/js/portal.js"></script>
-    <script>
-        let currentCheckId = null;
-        let currentCheckData = null;
-        let checksData = <%= JSON.stringify(checks) %>;
-
-        // Печать чека
-        function printCheck(id) {
-            currentCheckId = id;
-            currentCheckData = checksData.find(c => c.id === id);
-            
-            if (!currentCheckData) {
-                alert('Чек не найден');
-                return;
-            }
-
-            // Генерируем содержимое чека
-            const content = document.getElementById('printContent');
-            content.innerHTML = `
-                <div style="text-align: center; margin-bottom: 1.5rem; padding: 1rem; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border);">
-                    <h2 style="font-family: 'Space Grotesk', sans-serif; color: var(--accent); font-size: 1.5rem;">DEEP GAZE</h2>
-                    <p style="color: var(--text-secondary); font-size: 0.8rem;">Студия макросъемки радужки глаза</p>
-                    <hr style="border: none; border-top: 1px solid var(--border); margin: 1rem 0;">
-                </div>
-                <div style="text-align: left; font-size: 0.9rem; padding: 0 0.5rem;">
-                    <p><strong>№ чека:</strong> #${currentCheckData.id.substr(0, 8)}</p>
-                    <p><strong>Клиент:</strong> ${currentCheckData.clientName || 'Не указан'}</p>
-                    <p><strong>Телефон:</strong> ${currentCheckData.phone || '—'}</p>
-                    <p><strong>Услуга:</strong> ${currentCheckData.serviceName || 'Не указана'}</p>
-                    <p><strong>Сумма:</strong> <span style="color: var(--accent); font-weight: 700; font-size: 1.2rem;">${(currentCheckData.amount || 0).toLocaleString()} ₽</span></p>
-                    <p><strong>Метод оплаты:</strong> ${currentCheckData.paymentMethod || '—'}</p>
-                    <p><strong>Статус:</strong> ${currentCheckData.status || 'Черновик'}</p>
-                    <p><strong>Дата:</strong> ${new Date(currentCheckData.createdAt).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-                    ${currentCheckData.branchName ? `<p><strong>Филиал:</strong> ${currentCheckData.branchName}</p>` : ''}
-                    <p><strong>Менеджер:</strong> ${currentCheckData.createdBy || '—'}</p>
-                </div>
-                <hr style="border: none; border-top: 1px solid var(--border); margin: 1rem 0;">
-                <div style="text-align: center; color: var(--text-muted); font-size: 0.7rem; padding: 0.5rem;">
-                    <p>Спасибо за выбор DEEP GAZE!</p>
-                    <p>www.deepgaze.ru</p>
-                </div>
-            `;
-
-            document.getElementById('printModal').classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-
-        // Закрыть модальное окно
-        function closePrintModal() {
-            document.getElementById('printModal').classList.remove('active');
-            document.body.style.overflow = '';
-        }
-
-        // Скачать PDF
-        function downloadPDF() {
-            const element = document.getElementById('printContent');
-            const opt = {
-                margin:        [10, 10, 10, 10],
-                filename:      `чек_${currentCheckId.substr(0, 8)}.pdf`,
-                image:         { type: 'jpeg', quality: 0.98 },
-                html2canvas:   { scale: 2, useCORS: true, backgroundColor: '#0a0c12' },
-                jsPDF:         { unit: 'mm', format: 'a5', orientation: 'portrait' },
-                pagebreak:     { mode: ['avoid-all', 'css', 'legacy'] }
-            };
-            
-            html2pdf().set(opt).from(element).save();
-        }
-
-        // Удаление чека
-        function deleteCheck(id) {
-            if (confirm('Вы уверены, что хотите удалить этот чек?')) {
-                fetch(`/checks/${id}`, {
-                    method: 'DELETE'
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert('Ошибка при удалении');
-                    }
-                })
-                .catch(err => {
-                    alert('Ошибка: ' + err.message);
-                });
-            }
-        }
-
-        // Закрытие модального окна по клику на оверлей
-        document.getElementById('printModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closePrintModal();
-            }
-        });
-
-        // Закрытие по Esc
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closePrintModal();
-            }
-        });
-    </script>
-
-    <style>
-        /* Стили для модального окна печати */
-        #printContent {
-            background: var(--surface);
-            padding: 1.5rem;
-            border-radius: var(--radius);
-            border: 1px solid var(--border);
-            max-width: 100%;
-            margin: 0 auto;
-        }
-
-        #printContent p {
-            margin: 0.4rem 0;
-            color: var(--text-secondary);
-        }
-
-        #printContent p strong {
-            color: var(--text);
-        }
-
-        #printContent .accent {
-            color: var(--accent);
-        }
-
-        .modal-overlay .modal {
-            max-width: 500px;
-        }
-
-        @media print {
-            .portal-sidebar,
-            .portal-header .portal-actions,
-            .actions-cell,
-            .btn,
-            .modal-close,
-            .modal-overlay .modal .btn,
-            .sidebar-toggle,
-            .grid-bg {
-                display: none !important;
-            }
-
-            .modal-overlay {
-                position: fixed !important;
-                background: white !important;
-                backdrop-filter: none !important;
-                opacity: 1 !important;
-                pointer-events: all !important;
-                top: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                bottom: 0 !important;
-                z-index: 9999 !important;
-            }
-
-            .modal-overlay .modal {
-                background: white !important;
-                border: none !important;
-                box-shadow: none !important;
-                max-width: 100% !important;
-                width: 100% !important;
-                padding: 2rem !important;
-                border-radius: 0 !important;
-                max-height: 100vh !important;
-                overflow-y: auto !important;
-            }
-
-            .modal-overlay .modal h3 {
-                color: #000 !important;
-            }
-
-            #printContent {
-                background: white !important;
-                border: 1px solid #e0e0e0 !important;
-                color: #000 !important;
-            }
-
-            #printContent p,
-            #printContent p strong {
-                color: #000 !important;
-            }
-
-            #printContent .accent {
-                color: #c8a45c !important;
-            }
-
-            #printContent h2 {
-                color: #c8a45c !important;
-            }
-
-            body * {
-                visibility: hidden;
-            }
-            #printModal,
-            #printModal * {
-                visibility: visible;
-            }
-            #printModal {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-            }
-        }
-    </style>
 </body>
 </html>
