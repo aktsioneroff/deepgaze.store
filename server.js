@@ -6,7 +6,7 @@ const fs = require('fs');
 require('dotenv').config();
 
 // ===== ПОДКЛЮЧЕНИЕ S3 =====
-const { S3Client, HeadBucketCommand } = require('@aws-sdk/client-s3');
+const { S3Client, HeadBucketCommand, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 
 // ===== КОНФИГУРАЦИЯ S3 =====
 const s3Config = {
@@ -20,6 +20,7 @@ const s3Config = {
 };
 
 const BUCKET_NAME = 'b84d36c2-5e58-406e-9d3d-5754fe0dda39';
+
 const s3Client = new S3Client(s3Config);
 let s3Connected = false;
 
@@ -40,7 +41,6 @@ async function testS3() {
 async function readS3(key) {
     if (!s3Connected) return null;
     try {
-        const { GetObjectCommand } = require('@aws-sdk/client-s3');
         const result = await s3Client.send(new GetObjectCommand({
             Bucket: BUCKET_NAME,
             Key: key
@@ -57,7 +57,6 @@ async function readS3(key) {
 async function writeS3(key, data) {
     if (!s3Connected) return false;
     try {
-        const { PutObjectCommand } = require('@aws-sdk/client-s3');
         await s3Client.send(new PutObjectCommand({
             Bucket: BUCKET_NAME,
             Key: key,
@@ -142,15 +141,6 @@ app.use((req, res, next) => {
 // ===== ПОДКЛЮЧЕНИЕ МАРШРУТОВ =====
 const portalRoutes = require('./routes/portal');
 app.use('/', portalRoutes);
-
-// ===== S3 СТАТУС =====
-app.get('/api/s3-status', (req, res) => {
-    res.json({
-        connected: s3Connected,
-        bucket: BUCKET_NAME,
-        endpoint: s3Config.endpoint
-    });
-});
 
 // ===== 404 =====
 app.use((req, res) => {
