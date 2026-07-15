@@ -135,6 +135,36 @@
     color: #95a5a6;
 }
 
+/* ===== CHECK STATUS ===== */
+.check-status {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 2rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+}
+
+.check-status.paid {
+    background: rgba(76, 175, 80, 0.15);
+    color: #4CAF50;
+}
+
+.check-status.pending {
+    background: rgba(255, 152, 0, 0.15);
+    color: #FF9800;
+}
+
+.check-status.canceled {
+    background: rgba(231, 76, 60, 0.15);
+    color: #e74c3c;
+}
+
+.check-total {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    color: var(--accent);
+}
+
 /* ===== SOURCE BADGES ===== */
 .source-badge {
     display: inline-block;
@@ -310,96 +340,4 @@
 }
 
 .module-form .form-control select:-moz-focusring {
-    color: transparent;
-    text-shadow: 0 0 0 var(--text);
-}
-
-.module-form .form-control select::-ms-expand {
-    display: none;
-}
-
-.module-form .form-control select option:hover,
-.module-form .form-control select option:checked,
-.module-form .form-control select option:active {
-    background: rgba(200, 164, 92, 0.2) !important;
-    color: var(--accent) !important;
-}
-
-/* FORM ROW */
-.module-form .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-}
-
-.module-form .form-actions {
-    display: flex;
-    gap: 0.8rem;
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border);
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-    .module-header {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .module-header .module-actions {
-        justify-content: stretch;
-    }
-    
-    .module-header .module-actions .btn {
-        flex: 1;
-        justify-content: center;
-    }
-    
-    .table-wrapper table {
-        font-size: 0.75rem;
-    }
-    
-    .table-wrapper th,
-    .table-wrapper td {
-        padding: 0.5rem 0.6rem;
-    }
-    
-    .table-actions {
-        flex-direction: column;
-        gap: 0.2rem;
-    }
-    
-    .btn-icon {
-        width: 28px;
-        height: 28px;
-    }
-    
-    .module-form .form-row {
-        grid-template-columns: 1fr;
-    }
-    
-    .module-form .form-actions {
-        flex-direction: column;
-    }
-    
-    .module-form .form-actions .btn {
-        justify-content: center;
-    }
-}
-
-@media (max-width: 480px) {
-    .table-wrapper {
-        font-size: 0.7rem;
-    }
-    
-    .table-wrapper th,
-    .table-wrapper td {
-        padding: 0.4rem 0.4rem;
-    }
-    
-    .table-id {
-        font-size: 0.6rem;
-        padding: 0.1rem 0.4rem;
-    }
-}
+    color:
