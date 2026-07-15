@@ -90,6 +90,6 @@ router.post('/checks/save', portalController.requireAuth, portalController.saveC
 router.delete('/checks/:id', portalController.requireAuth, portalController.deleteCheck);
 
 // ===== ЗАГЛУШКА =====
-router.get('/portal/*', portalController.requireAuth, portalController.getPlaceholder);
+router.get('/portal/*', portalController.requireAuth, portalController.getPortalPlaceholder);
 
 module.exports = router;
