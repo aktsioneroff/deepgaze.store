@@ -72,14 +72,15 @@ router.get('/services/edit/:id', checkSession, asyncHandler(portalController.get
 router.post('/services/save', checkSession, asyncHandler(portalController.saveService));
 router.delete('/services/delete/:id', checkSession, asyncHandler(portalController.deleteService));
 
-// ===== API СТАТУС S3 (публичный) =====
+// ===== API СТАТУС S3 =====
 router.get('/api/s3-status', (req, res) => {
-    const server = require('../server');
+    const s3 = require('../config/s3');
     res.json({
-        connected: server.s3Connected || false,
+        connected: s3.s3Connected,
         timestamp: new Date().toISOString(),
-        bucket: server.BUCKET_NAME || null,
-        endpoint: server.s3Config ? server.s3Config.endpoint : null
+        bucket: s3.BUCKET_NAME,
+        endpoint: s3.s3Config.endpoint,
+        region: s3.s3Config.region
     });
 });
 
