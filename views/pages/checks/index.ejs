@@ -128,7 +128,7 @@
                                         <p>Нет созданных чеков</p>
                                         <% if (permissions && permissions.checks && permissions.checks.create) { %>
                                             <a href="/checks/new" class="btn btn-primary">Создать первый чек</a>
-                                        <% end %>
+                                        <% } %>
                                     </div>
                                 </td>
                             </tr>
@@ -141,11 +141,11 @@
 
     <!-- Модальное окно для печати чека -->
     <div class="modal-overlay" id="printModal">
-        <div class="modal">
+        <div class="modal" style="max-width: 500px;">
             <button class="modal-close" onclick="closePrintModal()">×</button>
-            <h3>🧾 Чек</h3>
+            <h3 style="text-align: center; font-family: 'Space Grotesk', sans-serif;">🧾 Чек</h3>
             <div id="printContent" style="padding: 1rem 0;"></div>
-            <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem;">
+            <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem; flex-wrap: wrap;">
                 <button onclick="downloadPDF()" class="btn btn-primary">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.3rem;">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -171,14 +171,12 @@
     <script>
         let currentCheckId = null;
         let currentCheckData = null;
+        let checksData = <%= JSON.stringify(checks) %>;
 
         // Печать чека
         function printCheck(id) {
             currentCheckId = id;
-            
-            // Находим данные чека
-            const checks = <%= JSON.stringify(checks) %>;
-            currentCheckData = checks.find(c => c.id === id);
+            currentCheckData = checksData.find(c => c.id === id);
             
             if (!currentCheckData) {
                 alert('Чек не найден');
@@ -188,12 +186,12 @@
             // Генерируем содержимое чека
             const content = document.getElementById('printContent');
             content.innerHTML = `
-                <div style="text-align: center; margin-bottom: 1.5rem;">
-                    <h2 style="font-family: 'Space Grotesk', sans-serif; color: var(--accent);">DEEP GAZE</h2>
+                <div style="text-align: center; margin-bottom: 1.5rem; padding: 1rem; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border);">
+                    <h2 style="font-family: 'Space Grotesk', sans-serif; color: var(--accent); font-size: 1.5rem;">DEEP GAZE</h2>
                     <p style="color: var(--text-secondary); font-size: 0.8rem;">Студия макросъемки радужки глаза</p>
                     <hr style="border: none; border-top: 1px solid var(--border); margin: 1rem 0;">
                 </div>
-                <div style="text-align: left; font-size: 0.9rem;">
+                <div style="text-align: left; font-size: 0.9rem; padding: 0 0.5rem;">
                     <p><strong>№ чека:</strong> #${currentCheckData.id.substr(0, 8)}</p>
                     <p><strong>Клиент:</strong> ${currentCheckData.clientName || 'Не указан'}</p>
                     <p><strong>Телефон:</strong> ${currentCheckData.phone || '—'}</p>
@@ -206,7 +204,7 @@
                     <p><strong>Менеджер:</strong> ${currentCheckData.createdBy || '—'}</p>
                 </div>
                 <hr style="border: none; border-top: 1px solid var(--border); margin: 1rem 0;">
-                <div style="text-align: center; color: var(--text-muted); font-size: 0.7rem;">
+                <div style="text-align: center; color: var(--text-muted); font-size: 0.7rem; padding: 0.5rem;">
                     <p>Спасибо за выбор DEEP GAZE!</p>
                     <p>www.deepgaze.ru</p>
                 </div>
@@ -229,7 +227,7 @@
                 margin:        [10, 10, 10, 10],
                 filename:      `чек_${currentCheckId.substr(0, 8)}.pdf`,
                 image:         { type: 'jpeg', quality: 0.98 },
-                html2canvas:   { scale: 2, useCORS: true },
+                html2canvas:   { scale: 2, useCORS: true, backgroundColor: '#0a0c12' },
                 jsPDF:         { unit: 'mm', format: 'a5', orientation: 'portrait' },
                 pagebreak:     { mode: ['avoid-all', 'css', 'legacy'] }
             };
@@ -273,13 +271,13 @@
     </script>
 
     <style>
-        /* Дополнительные стили для модального окна печати */
+        /* Стили для модального окна печати */
         #printContent {
             background: var(--surface);
             padding: 1.5rem;
             border-radius: var(--radius);
             border: 1px solid var(--border);
-            max-width: 400px;
+            max-width: 100%;
             margin: 0 auto;
         }
 
@@ -292,6 +290,14 @@
             color: var(--text);
         }
 
+        #printContent .accent {
+            color: var(--accent);
+        }
+
+        .modal-overlay .modal {
+            max-width: 500px;
+        }
+
         @media print {
             .portal-sidebar,
             .portal-header .portal-actions,
@@ -299,46 +305,56 @@
             .btn,
             .modal-close,
             .modal-overlay .modal .btn,
-            .sidebar-toggle {
+            .sidebar-toggle,
+            .grid-bg {
                 display: none !important;
             }
 
             .modal-overlay {
-                position: static !important;
-                background: none !important;
+                position: fixed !important;
+                background: white !important;
                 backdrop-filter: none !important;
                 opacity: 1 !important;
                 pointer-events: all !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                z-index: 9999 !important;
             }
 
-            .modal {
-                box-shadow: none !important;
+            .modal-overlay .modal {
+                background: white !important;
                 border: none !important;
+                box-shadow: none !important;
                 max-width: 100% !important;
                 width: 100% !important;
-                padding: 0 !important;
+                padding: 2rem !important;
+                border-radius: 0 !important;
+                max-height: 100vh !important;
+                overflow-y: auto !important;
+            }
+
+            .modal-overlay .modal h3 {
+                color: #000 !important;
             }
 
             #printContent {
-                border: none !important;
-                padding: 0 !important;
-            }
-
-            #printModal .modal {
                 background: white !important;
-                color: black !important;
-            }
-
-            #printModal .modal h3 {
-                color: black !important;
+                border: 1px solid #e0e0e0 !important;
+                color: #000 !important;
             }
 
             #printContent p,
             #printContent p strong {
-                color: black !important;
+                color: #000 !important;
             }
 
             #printContent .accent {
+                color: #c8a45c !important;
+            }
+
+            #printContent h2 {
                 color: #c8a45c !important;
             }
 
