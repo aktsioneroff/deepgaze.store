@@ -70,7 +70,7 @@ async function writeS3(key, data) {
     }
 }
 
-// ===== ЭКСПОРТ ФУНКЦИЙ ДЛЯ КОНТРОЛЛЕРОВ =====
+// ===== ЭКСПОРТ ФУНКЦИЙ ДЛЯ ДРУГИХ МОДУЛЕЙ =====
 async function readData(fileName) {
     const data = await readS3(`data/${fileName}`);
     if (data) {
@@ -135,12 +135,24 @@ app.use(session({
 // ===== ЛОГИРОВАНИЕ =====
 app.use((req, res, next) => {
     console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`);
+    console.log(`  ├─ Session: ${req.session ? req.session.id : 'НЕТ'}`);
+    console.log(`  ├─ User: ${req.session?.user?.login || 'НЕТ'}`);
+    console.log(`  └─ S3: ${s3Connected ? '✅' : '❌'}`);
     next();
 });
 
-// ===== ПОДКЛЮЧЕНИЕ МАРШРУТОВ =====
-const portalRoutes = require('./routes/portal');
-app.use('/', portalRoutes);
+// ===== МАРШРУТЫ =====
+const indexRoutes = require('./routes/index');
+app.use('/', indexRoutes);
+
+// ===== S3 СТАТУС =====
+app.get('/api/s3-status', (req, res) => {
+    res.json({
+        connected: s3Connected,
+        bucket: BUCKET_NAME,
+        endpoint: s3Config.endpoint
+    });
+});
 
 // ===== 404 =====
 app.use((req, res) => {
