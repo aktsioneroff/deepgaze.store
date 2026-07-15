@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const server = require('../server');
+const s3 = require('../config/s3');
 
 const LOCAL_DATA_DIR = path.join(__dirname, '../data');
 
@@ -20,7 +20,7 @@ async function readData(fileName) {
     }
     
     try {
-        let data = await server.downloadFromS3(key);
+        let data = await s3.downloadFromS3(key);
         
         if (data === null) {
             const localPath = path.join(LOCAL_DATA_DIR, fileName);
@@ -48,7 +48,7 @@ async function writeData(fileName, data) {
     const key = `data/${fileName}`;
     
     try {
-        await server.uploadToS3(key, data);
+        await s3.uploadToS3(key, data);
         
         const localPath = path.join(LOCAL_DATA_DIR, fileName);
         fs.writeFileSync(localPath, JSON.stringify(data, null, 2));
@@ -68,7 +68,7 @@ async function deleteData(fileName) {
     const key = `data/${fileName}`;
     
     try {
-        await server.deleteFromS3(key);
+        await s3.deleteFromS3(key);
     } catch (error) {
         console.error(`Ошибка удаления из S3:`, error.message);
     }
