@@ -1,101 +1,80 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %></title>
-    <link rel="icon" type="image/x-icon" href="/ico/favicon.ico">
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/main.css">
-    <link rel="stylesheet" href="/css/portal.css">
-</head>
-<body>
-    <div class="grid-bg"></div>
+<%- include('../../partials/header', { user: user }) %>
+
+<div class="portal-container">
+    <%- include('../../partials/sidebar', { user: user, activePage: '/checks', permissions: permissions }) %>
     
-    <div class="portal-container">
-        <%- include('../../partials/sidebar', { user: user, activePage: activePage, permissions: permissions }) %>
-        
-        <div class="portal-content">
-            <header class="portal-header">
-                <h1><%= isEdit ? '✏️ Редактирование чека' : '➕ Создание чека' %></h1>
-                <a href="/checks" class="btn btn-outline">← Назад к списку</a>
-            </header>
-
-            <div class="form-container">
-                <form action="/checks/save" method="POST" id="checkForm">
-                    <% if (isEdit && check) { %>
-                        <input type="hidden" name="id" value="<%= check.id %>">
-                    <% } %>
-
-                    <div class="form-group">
-                        <label for="clientName">Имя клиента *</label>
-                        <input type="text" id="clientName" name="clientName" 
-                               class="form-input"
-                               value="<%= check ? check.clientName : '' %>" 
-                               placeholder="Введите имя клиента" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="phone">Телефон</label>
-                        <input type="text" id="phone" name="phone" 
-                               class="form-input"
-                               value="<%= check ? check.phone : '' %>" 
-                               placeholder="+7 (999) 123-45-67">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="serviceId">Услуга *</label>
-                        <select id="serviceId" name="serviceId" class="form-select" required>
-                            <option value="">Выберите услугу</option>
-                            <% if (services && services.length > 0) { %>
-                                <% services.forEach(service => { %>
-                                    <option value="<%= service.id %>" 
-                                        <%= (check && check.serviceId === service.id) ? 'selected' : '' %>>
-                                        <%= service.name %> — <%= service.price %>
-                                    </option>
-                                <% }) %>
-                            <% } %>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="amount">Сумма (₽) *</label>
-                        <input type="number" id="amount" name="amount" 
-                               class="form-input"
-                               value="<%= check ? check.amount : '' %>" 
-                               placeholder="Введите сумму" required step="0.01" min="0">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="paymentMethod">Метод оплаты</label>
-                        <select id="paymentMethod" name="paymentMethod" class="form-select">
-                            <option value="Наличные" <%= (check && check.paymentMethod === 'Наличные') ? 'selected' : '' %>>Наличные</option>
-                            <option value="Карта" <%= (check && check.paymentMethod === 'Карта') ? 'selected' : '' %>>Карта</option>
-                            <option value="Перевод" <%= (check && check.paymentMethod === 'Перевод') ? 'selected' : '' %>>Перевод</option>
-                            <option value="Бонусы" <%= (check && check.paymentMethod === 'Бонусы') ? 'selected' : '' %>>Бонусы</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="status">Статус</label>
-                        <select id="status" name="status" class="form-select">
-                            <option value="Оплачен" <%= (check && check.status === 'Оплачен') ? 'selected' : '' %>>Оплачен</option>
-                            <option value="Черновик" <%= (check && check.status === 'Черновик') ? 'selected' : '' %>>Черновик</option>
-                            <option value="Отменен" <%= (check && check.status === 'Отменен') ? 'selected' : '' %>>Отменен</option>
-                        </select>
-                    </div>
-
-                    <div class="form-actions">
-                        <a href="/checks" class="btn btn-outline">Отмена</a>
-                        <button type="submit" class="btn btn-primary">
-                            <%= isEdit ? '💾 Сохранить' : '✅ Создать чек' %>
-                        </button>
-                    </div>
-                </form>
-            </div>
+    <main class="portal-content">
+        <div class="page-header">
+            <h1>💳 Чеки</h1>
+            <% if (permissions && permissions.checks && permissions.checks.create) { %>
+                <a href="/checks/new" class="btn btn-primary">+ Новый чек</a>
+            <% } %>
         </div>
-    </div>
 
-    <script src="/js/portal.js"></script>
-</body>
-</html>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>№</th>
+                        <th>Клиент</th>
+                        <th>Телефон</th>
+                        <th>Услуга</th>
+                        <th>Сумма</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (checks && checks.length > 0) { %>
+                        <% checks.forEach((check, index) => { %>
+                            <tr>
+                                <td>#<%= index + 1 %></td>
+                                <td><%= check.clientName || 'Не указан' %></td>
+                                <td><%= check.phone || '—' %></td>
+                                <td><%= check.serviceName || 'Не указана' %></td>
+                                <td><strong><%= (check.amount || 0).toLocaleString() %> ₽</strong></td>
+                                <td>
+                                    <span class="status-badge status-<%= (check.status || 'черновик').toLowerCase() %>">
+                                        <%= check.status || 'Черновик' %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <% if (permissions && permissions.checks && permissions.checks.edit) { %>
+                                        <a href="/checks/<%= check.id %>/edit" class="btn-icon">✏️</a>
+                                    <% } %>
+                                    <% if (permissions && permissions.checks && permissions.checks.delete) { %>
+                                        <button onclick="deleteCheck('<%= check.id %>')" class="btn-icon danger">🗑️</button>
+                                    <% } %>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="7" class="empty-state">
+                                <p>Нет созданных чеков</p>
+                                <% if (permissions && permissions.checks && permissions.checks.create) { %>
+                                    <a href="/checks/new" class="btn btn-primary">Создать первый чек</a>
+                                <% } %>
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<script>
+function deleteCheck(id) {
+    if (confirm('Удалить этот чек?')) {
+        fetch(`/checks/${id}`, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) location.reload();
+                else alert('Ошибка');
+            });
+    }
+}
+</script>
+
+<%- include('../../partials/footer') %>
