@@ -74,14 +74,30 @@ router.delete('/services/delete/:id', checkSession, asyncHandler(portalControlle
 
 // ===== API СТАТУС S3 =====
 router.get('/api/s3-status', (req, res) => {
-    const s3 = require('../config/s3');
-    res.json({
-        connected: s3.s3Connected,
-        timestamp: new Date().toISOString(),
-        bucket: s3.BUCKET_NAME,
-        endpoint: s3.s3Config.endpoint,
-        region: s3.s3Config.region
-    });
+    try {
+        const s3 = require('../config/s3');
+        res.json({
+            connected: s3.s3Connected || false,
+            timestamp: new Date().toISOString(),
+            bucket: s3.BUCKET_NAME || null,
+            endpoint: s3.s3Config ? s3.s3Config.endpoint : null
+        });
+    } catch (error) {
+        res.json({
+            connected: false,
+            timestamp: new Date().toISOString(),
+            error: error.message
+        });
+    }
+});
+
+// ===== API ПРОВЕРКИ СЕССИИ =====
+router.get('/api/check-session', (req, res) => {
+    if (req.session && req.session.user) {
+        res.json({ success: true, user: req.session.user });
+    } else {
+        res.status(401).json({ success: false, error: 'Не авторизован' });
+    }
 });
 
 module.exports = router;
