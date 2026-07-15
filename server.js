@@ -32,16 +32,6 @@ console.log(`  ├─ Access Key: ${s3.s3Config.credentials.accessKeyId.substrin
 console.log(`  └─ Region: ${s3.s3Config.region}`);
 console.log('📦 ============================\n');
 
-// Проверяем подключение
-(async () => {
-    try {
-        await s3.testS3Connection();
-        console.log(`📌 S3 статус: ${s3.s3Connected ? '✅ Подключен' : '❌ Недоступен'}`);
-    } catch (error) {
-        console.error('❌ Ошибка при проверке S3:', error.message);
-    }
-})();
-
 // ===== НАСТРОЙКА ПРИЛОЖЕНИЯ =====
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -90,6 +80,18 @@ app.use((req, res, next) => {
 
 // ===== МАРШРУТЫ =====
 console.log('📌 Загрузка маршрутов...');
+
+// Проверка подключения S3 и загрузка маршрутов
+(async () => {
+    try {
+        await s3.testS3Connection();
+        console.log(`📌 S3 статус: ${s3.s3Connected ? '✅ Подключен' : '❌ Недоступен'}`);
+    } catch (error) {
+        console.error('❌ Ошибка при проверке S3:', error.message);
+        s3.s3Connected = false;
+    }
+})();
+
 const indexRoutes = require('./routes/index');
 app.use('/', indexRoutes);
 console.log('✅ Маршруты загружены');
@@ -107,6 +109,7 @@ app.listen(PORT, () => {
     console.log(`\n🚀 Сервер успешно запущен на http://localhost:${PORT}`);
     console.log(`📌 S3 статус: ${s3.s3Connected ? '✅ Подключен' : '❌ Локальное хранилище'}`);
     console.log('📌 Войдите под admin / admin123');
+    console.log('📌 Проверить S3: /api/s3-status');
 });
 
 // Обработка ошибок
