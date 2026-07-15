@@ -13,11 +13,9 @@ const s3Config = {
 
 const BUCKET_NAME = 'b84d36c2-5e58-406e-9d3d-5754fe0dda39';
 
-// Создаем S3 клиент
 const s3Client = new S3Client(s3Config);
 let s3Connected = false;
 
-// ===== ФУНКЦИЯ ПРОВЕРКИ S3 =====
 async function testS3Connection() {
     console.log('🔍 Проверка подключения к S3...');
     try {
@@ -27,18 +25,17 @@ async function testS3Connection() {
         return true;
     } catch (error) {
         console.error('❌ Ошибка подключения к S3:');
-        console.error('  ├─ Name:', error.name);
-        console.error('  ├─ Code:', error.Code || 'Нет');
+        console.error('  ├─ Name:', error.name || 'Неизвестно');
+        console.error('  ├─ Code:', error.Code || error.$metadata?.httpStatusCode || 'Нет');
         console.error('  └─ Message:', error.message);
         s3Connected = false;
         return false;
     }
 }
 
-// ===== ФУНКЦИИ ДЛЯ РАБОТЫ С S3 =====
 async function uploadToS3(key, data, contentType = 'application/json') {
     if (!s3Connected) {
-        console.log(`⚠️ S3 не доступен, данные НЕ СОХРАНЕНЫ: ${key}`);
+        console.log(`⚠️ S3 не доступен, пропускаем загрузку: ${key}`);
         return false;
     }
     try {
@@ -48,34 +45,32 @@ async function uploadToS3(key, data, contentType = 'application/json') {
             Body: typeof data === 'string' ? data : JSON.stringify(data, null, 2),
             ContentType: contentType
         };
-        const result = await s3Client.send(new PutObjectCommand(params));
-        console.log(`✅ Файл загружен в S3: ${key} (ETag: ${result.ETag})`);
+        await s3Client.send(new PutObjectCommand(params));
+        console.log(`✅ Файл загружен в S3: ${key}`);
         return true;
     } catch (error) {
         console.error(`❌ Ошибка загрузки в S3: ${error.message}`);
-        console.error(`  └─ Key: ${key}`);
         return false;
     }
 }
 
 async function downloadFromS3(key) {
     if (!s3Connected) {
-        console.log(`⚠️ S3 не доступен: ${key}`);
+        console.log(`⚠️ S3 не доступен, пропускаем скачивание: ${key}`);
         return null;
     }
     try {
         const params = { Bucket: BUCKET_NAME, Key: key };
         const result = await s3Client.send(new GetObjectCommand(params));
         const body = await result.Body.transformToString();
-        console.log(`✅ Файл скачан из S3: ${key} (${body.length} байт)`);
+        console.log(`✅ Файл скачан из S3: ${key}`);
         return body;
     } catch (error) {
         if (error.name === 'NoSuchKey') {
-            console.log(`📄 Файл не найден в S3: ${key} (будет создан при первом сохранении)`);
+            console.log(`📄 Файл не найден в S3: ${key}`);
             return null;
         }
         console.error(`❌ Ошибка скачивания из S3: ${error.message}`);
-        console.error(`  └─ Key: ${key}`);
         return null;
     }
 }
@@ -109,16 +104,13 @@ async function listS3Files(prefix = '') {
             Prefix: prefix
         };
         const result = await s3Client.send(new ListObjectsV2Command(params));
-        const files = result.Contents ? result.Contents.map(item => item.Key) : [];
-        console.log(`📁 Список файлов в S3 (${prefix}): ${files.length} файлов`);
-        return files;
+        return result.Contents ? result.Contents.map(item => item.Key) : [];
     } catch (error) {
         console.error('❌ Ошибка получения списка файлов:', error.message);
         return [];
     }
 }
 
-// ===== ЭКСПОРТ =====
 module.exports = {
     s3Client,
     s3Config,
