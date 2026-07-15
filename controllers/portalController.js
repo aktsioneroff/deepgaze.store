@@ -922,3 +922,442 @@ exports.getPortfolioData = async () => {
 exports.getServicesData = async () => {
     return await readData(SERVICES_FILE);
 };
+// ===== ЧЕКИ =====
+const CHECKS_FILE = 'checks.json';
+
+exports.getChecks = async (req, res) => {
+    const checks = await readData(CHECKS_FILE);
+    const employees = await readData(EMPLOYEES_FILE);
+    const services = await readData(SERVICES_FILE);
+    const permissions = getUserPermissions(req.session.user);
+    
+    // Добавляем имя сотрудника и название услуги
+    const checksWithInfo = checks.map(check => {
+        const employee = employees.find(e => e.id === check.employeeId);
+        const service = services.find(s => s.id === check.serviceId);
+        return {
+            ...check,
+            employeeName: employee ? employee.fullName : 'Неизвестно',
+            serviceName: service ? service.name : 'Не указана',
+            servicePrice: service ? service.price : '0 ₽'
+        };
+    });
+    
+    res.render('pages/checks/index', {
+        title: 'Чеки — DEEP GAZE',
+        user: req.session.user,
+        activePage: '/checks',
+        checks: checksWithInfo,
+        shortId: shortId,
+        permissions: permissions
+    });
+};
+
+exports.getCheckForm = async (req, res) => {
+    const id = req.params.id;
+    let check = null;
+    const services = await readData(SERVICES_FILE);
+    const permissions = getUserPermissions(req.session.user);
+    const employees = await readData(EMPLOYEES_FILE);
+    
+    // Находим текущего сотрудника
+    const currentEmployee = employees.find(e => e.id === req.session.user.employeeId);
+    
+    if (id) {
+        const checks = await readData(CHECKS_FILE);
+        check = checks.find(c => c.id === id);
+    }
+    
+    res.render('pages/checks/form', {
+        title: (id ? 'Редактирование' : 'Создание') + ' чека — DEEP GAZE',
+        user: req.session.user,
+        activePage: '/checks',
+        check: check,
+        services: services,
+        isEdit: !!id,
+        permissions: permissions,
+        employee: currentEmployee
+    });
+};
+
+exports.saveCheck = async (req, res) => {
+    const { id, clientName, clientPhone, serviceId, price, discount, paymentMethod, notes } = req.body;
+    const checks = await readData(CHECKS_FILE);
+    const employees = await readData(EMPLOYEES_FILE);
+    const services = await readData(SERVICES_FILE);
+    
+    // Находим текущего сотрудника
+    const employee = employees.find(e => e.id === req.session.user.employeeId);
+    const service = services.find(s => s.id === serviceId);
+    
+    // Вычисляем итоговую сумму
+    const originalPrice = parseFloat(price) || 0;
+    const discountPercent = parseFloat(discount) || 0;
+    const finalPrice = originalPrice - (originalPrice * discountPercent / 100);
+    
+    if (id) {
+        // Редактирование
+        const index = checks.findIndex(c => c.id === id);
+        if (index !== -1) {
+            checks[index] = { 
+                ...checks[index], 
+                clientName,
+                clientPhone,
+                serviceId,
+                price: originalPrice,
+                discount: discountPercent,
+                finalPrice: Math.round(finalPrice * 100) / 100,
+                paymentMethod,
+                notes
+            };
+        }
+    } else {
+        // Создание нового чека
+        const newCheck = {
+            id: generateId(),
+            employeeId: req.session.user.employeeId,
+            employeeName: req.session.user.name,
+            employeePosition: req.session.user.position || 'Сотрудник',
+            clientName: clientName || 'Клиент',
+            clientPhone: clientPhone || '',
+            serviceId: serviceId || '',
+            serviceName: service ? service.name : 'Не указана',
+            price: originalPrice,
+            discount: discountPercent,
+            finalPrice: Math.round(finalPrice * 100) / 100,
+            paymentMethod: paymentMethod || 'Наличными',
+            notes: notes || '',
+            createdAt: new Date().toISOString(),
+            checkNumber: `CH-${Date.now().toString().slice(-6)}`
+        };
+        checks.push(newCheck);
+    }
+    
+    await writeData(CHECKS_FILE, checks);
+    res.redirect('/checks');
+};
+
+exports.deleteCheck = async (req, res) => {
+    const id = req.params.id;
+    const checks = await readData(CHECKS_FILE);
+    const filtered = checks.filter(c => c.id !== id);
+    await writeData(CHECKS_FILE, filtered);
+    res.json({ success: true });
+};
+
+exports.viewCheck = async (req, res) => {
+    const id = req.params.id;
+    const checks = await readData(CHECKS_FILE);
+    const employees = await readData(EMPLOYEES_FILE);
+    const services = await readData(SERVICES_FILE);
+    
+    const check = checks.find(c => c.id === id);
+    if (!check) {
+        return res.status(404).render('pages/404', {
+            title: 'Чек не найден',
+            user: req.session.user
+        });
+    }
+    
+    const employee = employees.find(e => e.id === check.employeeId);
+    const service = services.find(s => s.id === check.serviceId);
+    
+    const checkWithInfo = {
+        ...check,
+        employeeName: employee ? employee.fullName : 'Неизвестно',
+        employeePosition: employee ? employee.position : 'Сотрудник',
+        serviceName: service ? service.name : 'Не указана'
+    };
+    
+    res.render('pages/checks/view', {
+        title: `Чек №${check.checkNumber} — DEEP GAZE`,
+        user: req.session.user,
+        activePage: '/checks',
+        check: checkWithInfo,
+        shortId: shortId
+    });
+};
+
+exports.generatePDF = async (req, res) => {
+    const id = req.params.id;
+    const checks = await readData(CHECKS_FILE);
+    const employees = await readData(EMPLOYEES_FILE);
+    const services = await readData(SERVICES_FILE);
+    
+    const check = checks.find(c => c.id === id);
+    if (!check) {
+        return res.status(404).json({ error: 'Чек не найден' });
+    }
+    
+    const employee = employees.find(e => e.id === check.employeeId);
+    const service = services.find(s => s.id === check.serviceId);
+    
+    const checkData = {
+        ...check,
+        employeeName: employee ? employee.fullName : 'Неизвестно',
+        employeePosition: employee ? employee.position : 'Сотрудник',
+        serviceName: service ? service.name : 'Не указана'
+    };
+    
+    // Генерируем HTML для PDF
+    const html = generateCheckHTML(checkData);
+    
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
+};
+
+// ===== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ГЕНЕРАЦИИ PDF HTML =====
+function generateCheckHTML(check) {
+    const date = new Date(check.createdAt).toLocaleDateString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+    const time = new Date(check.createdAt).toLocaleTimeString('ru-RU', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Чек №${check.checkNumber}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', 'Arial', sans-serif;
+            background: #fff;
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+        .check-container {
+            max-width: 600px;
+            width: 100%;
+        }
+        .check-page {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 30px 35px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        .check-header {
+            text-align: center;
+            border-bottom: 2px solid #c8a45c;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .check-header .logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: #0a0c12;
+        }
+        .check-header .logo span { color: #c8a45c; }
+        .check-header .check-number {
+            font-size: 14px;
+            color: #7c8190;
+            margin-top: 4px;
+        }
+        .check-header .check-number span {
+            color: #0a0c12;
+            font-weight: 600;
+        }
+        .check-body {
+            margin-bottom: 20px;
+        }
+        .check-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .check-row .label {
+            color: #7c8190;
+            font-size: 13px;
+        }
+        .check-row .value {
+            color: #0a0c12;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .check-divider {
+            border-top: 2px dashed #e5e7eb;
+            margin: 15px 0;
+        }
+        .check-total {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-top: 2px solid #c8a45c;
+            margin-top: 10px;
+        }
+        .check-total .label {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0a0c12;
+        }
+        .check-total .value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #c8a45c;
+        }
+        .check-discount {
+            color: #e74c3c;
+            font-size: 13px;
+        }
+        .check-footer {
+            border-top: 1px solid #e5e7eb;
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+        .check-signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .check-signatures .signature-block {
+            text-align: center;
+            width: 45%;
+        }
+        .check-signatures .signature-line {
+            border-top: 1px solid #0a0c12;
+            width: 100%;
+            margin: 8px 0 4px 0;
+        }
+        .check-signatures .signature-label {
+            font-size: 11px;
+            color: #7c8190;
+        }
+        .check-signatures .signature-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: #0a0c12;
+        }
+        .check-notes {
+            margin-top: 15px;
+            padding: 10px 12px;
+            background: #f9fafb;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #7c8190;
+        }
+        .print-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: #c8a45c;
+            color: #0a0c12;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-family: 'Inter', sans-serif;
+        }
+        .print-btn:hover { background: #d4b46e; }
+        @media print {
+            .print-btn { display: none; }
+            .check-page { box-shadow: none; border: 1px solid #ddd; }
+            body { padding: 0; }
+        }
+        @media (max-width: 480px) {
+            .check-page { padding: 20px; }
+            .check-total .value { font-size: 17px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="check-container">
+        <div class="check-page">
+            <div class="check-header">
+                <div class="logo">DEEP<span>.</span>GAZE</div>
+                <div class="check-number">Чек № <span>${check.checkNumber}</span></div>
+            </div>
+            
+            <div class="check-body">
+                <div class="check-row">
+                    <span class="label">Дата и время</span>
+                    <span class="value">${date} ${time}</span>
+                </div>
+                <div class="check-row">
+                    <span class="label">Сотрудник</span>
+                    <span class="value">${check.employeeName} (${check.employeePosition})</span>
+                </div>
+                <div class="check-row">
+                    <span class="label">Клиент</span>
+                    <span class="value">${check.clientName}</span>
+                </div>
+                <div class="check-row">
+                    <span class="label">Телефон</span>
+                    <span class="value">${check.clientPhone || '—'}</span>
+                </div>
+                <div class="check-row">
+                    <span class="label">Услуга</span>
+                    <span class="value">${check.serviceName}</span>
+                </div>
+                <div class="check-row">
+                    <span class="label">Стоимость</span>
+                    <span class="value">${check.price} ₽</span>
+                </div>
+                ${check.discount > 0 ? `
+                <div class="check-row">
+                    <span class="label">Скидка</span>
+                    <span class="value check-discount">-${check.discount}%</span>
+                </div>
+                ` : ''}
+                <div class="check-row">
+                    <span class="label">Способ оплаты</span>
+                    <span class="value">${check.paymentMethod}</span>
+                </div>
+            </div>
+            
+            <div class="check-divider"></div>
+            
+            <div class="check-total">
+                <span class="label">ИТОГО К ОПЛАТЕ</span>
+                <span class="value">${check.finalPrice} ₽</span>
+            </div>
+            
+            ${check.notes ? `<div class="check-notes">📝 ${check.notes}</div>` : ''}
+            
+            <div class="check-footer">
+                <div class="check-signatures">
+                    <div class="signature-block">
+                        <div class="signature-name">${check.employeeName}</div>
+                        <div class="signature-line"></div>
+                        <div class="signature-label">Подпись сотрудника</div>
+                    </div>
+                    <div class="signature-block">
+                        <div class="signature-name">${check.clientName}</div>
+                        <div class="signature-line"></div>
+                        <div class="signature-label">Подпись клиента</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <button class="print-btn" onclick="window.print()">🖨️ Распечатать чек</button>
+    </div>
+</body>
+</html>
+    `;
+}
+
+// ===== ПУБЛИЧНЫЕ МЕТОДЫ ДЛЯ API =====
+exports.getPartnersData = async () => {
+    return await readData(PARTNERS_FILE);
+};
+
+exports.getPortfolioData = async () => {
+    return await readData(PORTFOLIO_FILE);
+};
+
+exports.getServicesData = async () => {
+    return await readData(SERVICES_FILE);
+};
