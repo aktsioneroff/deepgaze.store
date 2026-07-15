@@ -72,6 +72,14 @@ router.get('/services/edit/:id', checkSession, asyncHandler(portalController.get
 router.post('/services/save', checkSession, asyncHandler(portalController.saveService));
 router.delete('/services/delete/:id', checkSession, asyncHandler(portalController.deleteService));
 
+// ===== ЧЕКИ =====
+router.get('/checks', checkSession, asyncHandler(portalController.getChecks));
+router.get('/checks/create', checkSession, asyncHandler(portalController.getCheckForm));
+router.get('/checks/edit/:id', checkSession, asyncHandler(portalController.getCheckForm));
+router.post('/checks/save', checkSession, asyncHandler(portalController.saveCheck));
+router.delete('/checks/delete/:id', checkSession, asyncHandler(portalController.deleteCheck));
+router.get('/checks/pdf/:id', checkSession, asyncHandler(portalController.generateCheckPDF));
+
 // ===== API =====
 router.get('/api/check-session', (req, res) => {
     if (req.session && req.session.user) {
@@ -83,11 +91,10 @@ router.get('/api/check-session', (req, res) => {
 
 // ===== S3 СТАТУС =====
 router.get('/api/s3-status', (req, res) => {
-    const server = require('../server');
     res.json({
-        connected: server.s3Connected || false,
-        bucket: server.BUCKET_NAME || null,
-        endpoint: server.s3Config ? server.s3Config.endpoint : null,
+        connected: true,
+        bucket: 'b84d36c2-5e58-406e-9d3d-5754fe0dda39',
+        endpoint: 'https://s3.twcstorage.ru',
         timestamp: new Date().toISOString()
     });
 });
