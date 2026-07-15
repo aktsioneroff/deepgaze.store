@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const portalController = require('../controllers/portalController');
 
-// Проверка сессии
+// ===== ПРОВЕРКА СЕССИИ =====
 function checkSession(req, res, next) {
     if (req.session && req.session.user) {
         next();
@@ -11,7 +11,7 @@ function checkSession(req, res, next) {
     }
 }
 
-// Обертка для async функций
+// ===== ОБЕРТКА ДЛЯ ASYNC ФУНКЦИЙ =====
 const asyncHandler = fn => (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
 };
@@ -71,5 +71,16 @@ router.get('/services/add', checkSession, asyncHandler(portalController.getServi
 router.get('/services/edit/:id', checkSession, asyncHandler(portalController.getServiceForm));
 router.post('/services/save', checkSession, asyncHandler(portalController.saveService));
 router.delete('/services/delete/:id', checkSession, asyncHandler(portalController.deleteService));
+
+// ===== API СТАТУС S3 (публичный) =====
+router.get('/api/s3-status', (req, res) => {
+    const server = require('../server');
+    res.json({
+        connected: server.s3Connected || false,
+        timestamp: new Date().toISOString(),
+        bucket: server.BUCKET_NAME || null,
+        endpoint: server.s3Config ? server.s3Config.endpoint : null
+    });
+});
 
 module.exports = router;
