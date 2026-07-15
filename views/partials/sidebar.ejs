@@ -1,67 +1,126 @@
-<aside class="portal-sidebar" id="sidebar">
-    <div class="logo">DEEP<span>.</span>GAZE</div>
-    
-    <nav class="sidebar-nav">
-        <div class="nav-label">Портал</div>
-        <a href="/dashboard" class="<%= activePage === 'dashboard' ? 'active' : '' %>">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-            Дашборд
-        </a>
-        
-        <div class="nav-label">Управление</div>
-        <% if (permissions && permissions.requests && permissions.requests.view) { %>
-            <a href="/requests" class="<%= activePage === '/requests' ? 'active' : '' %>">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                Заявки
-            </a>
-        <% } %>
-        <% if (permissions && permissions.services && permissions.services.view) { %>
-            <a href="/services" class="<%= activePage === '/services' ? 'active' : '' %>">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-                Услуги
-            </a>
-        <% } %>
-        <% if (permissions && permissions.portfolio && permissions.portfolio.view) { %>
-            <a href="/portfolio" class="<%= activePage === '/portfolio' ? 'active' : '' %>">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                Портфолио
-            </a>
-        <% } %>
-        <% if (permissions && permissions.partners && permissions.partners.view) { %>
-            <a href="/partners" class="<%= activePage === '/partners' ? 'active' : '' %>">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                Партнёры
-            </a>
-        <% } %>
-        <% if (permissions && permissions.branches && permissions.branches.view) { %>
-            <a href="/branches" class="<%= activePage === '/branches' ? 'active' : '' %>">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                Филиалы
-            </a>
-        <% } %>
-        <% if (permissions && permissions.employees && permissions.employees.view) { %>
-            <a href="/employees" class="<%= activePage === '/employees' ? 'active' : '' %>">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Сотрудники
-            </a>
-        <% } %>
-        <% if (permissions && permissions.referrals && permissions.referrals.view) { %>
-            <a href="/portal/referrals" class="<%= activePage === '/portal/referrals' ? 'active' : '' %>">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                Рефералы
-            </a>
-        <% } %>
-        <% if (permissions && permissions.checks && permissions.checks.view) { %>
-            <a href="/checks" class="<%= activePage === '/checks' ? 'active' : '' %>">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M8 12h8"/><path d="M8 16h4"/></svg>
-                Чеки
-            </a>
-        <% } %>
-    </nav>
-
-    <div class="sidebar-user">
-        <div class="user-name"><%= user.name %></div>
-        <div class="user-role"><%= user.position || user.role %></div>
-        <a href="/logout" class="logout-btn">Выйти</a>
+<aside class="portal-sidebar" id="portalSidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">
+      <span class="sidebar-logo-text">DEEP<span>.</span>GAZE</span>
+      <span class="sidebar-logo-icon">D</span>
     </div>
+    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Свернуть меню">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
+  </div>
+  
+  <nav class="sidebar-nav">
+    <!-- Панель управления -->
+    <a href="/dashboard" class="sidebar-link <%= activePage === 'dashboard' ? 'active' : '' %>" data-tooltip="Панель управления">
+      <span class="sidebar-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+      </span>
+      <span class="sidebar-label">Панель управления</span>
+    </a>
+
+    <!-- Заявки -->
+    <a href="/requests" class="sidebar-link <%= activePage === '/requests' ? 'active' : '' %>" data-tooltip="Заявки">
+      <span class="sidebar-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+      </span>
+      <span class="sidebar-label">Заявки</span>
+    </a>
+
+    <!-- Услуги -->
+    <a href="/services" class="sidebar-link <%= activePage === '/services' ? 'active' : '' %>" data-tooltip="Услуги">
+      <span class="sidebar-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+      </span>
+      <span class="sidebar-label">Услуги</span>
+    </a>
+
+    <!-- Портфолио -->
+    <a href="/portfolio" class="sidebar-link <%= activePage === '/portfolio' ? 'active' : '' %>" data-tooltip="Портфолио">
+      <span class="sidebar-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      </span>
+      <span class="sidebar-label">Портфолио</span>
+    </a>
+
+    <!-- Партнёры -->
+    <a href="/partners" class="sidebar-link <%= activePage === '/partners' ? 'active' : '' %>" data-tooltip="Партнёры">
+      <span class="sidebar-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </span>
+      <span class="sidebar-label">Партнёры</span>
+    </a>
+
+    <!-- Филиалы -->
+    <a href="/branches" class="sidebar-link <%= activePage === '/branches' ? 'active' : '' %>" data-tooltip="Филиалы">
+      <span class="sidebar-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+      </span>
+      <span class="sidebar-label">Филиалы</span>
+    </a>
+
+    <!-- Сотрудники -->
+    <a href="/employees" class="sidebar-link <%= activePage === '/employees' ? 'active' : '' %>" data-tooltip="Сотрудники">
+      <span class="sidebar-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+      </span>
+      <span class="sidebar-label">Сотрудники</span>
+    </a>
+
+    <!-- Рефералы -->
+    <a href="/portal/referrals" class="sidebar-link <%= activePage === '/portal/referrals' ? 'active' : '' %>" data-tooltip="Реферальная система">
+      <span class="sidebar-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+        </svg>
+      </span>
+      <span class="sidebar-label">Рефералы</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="user-avatar"><%= user ? user.name.charAt(0).toUpperCase() : '?' %></div>
+      <div class="user-info">
+        <span class="user-name"><%= user ? user.name : 'Гость' %></span>
+        <span class="user-role"><%= user ? user.role : '' %></span>
+      </div>
+    </div>
+    <a href="/logout" class="sidebar-logout" data-tooltip="Выйти">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+      <span class="sidebar-label">Выйти</span>
+    </a>
+  </div>
 </aside>
