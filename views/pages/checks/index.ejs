@@ -27,21 +27,6 @@
       font-weight: 700;
       color: var(--accent);
     }
-    .check-status {
-      display: inline-block;
-      padding: 0.2rem 0.6rem;
-      border-radius: 2rem;
-      font-size: 0.65rem;
-      font-weight: 600;
-    }
-    .check-status.paid {
-      background: rgba(46, 204, 113, 0.15);
-      color: #2ecc71;
-    }
-    .check-status.unpaid {
-      background: rgba(231, 76, 60, 0.15);
-      color: #e74c3c;
-    }
   </style>
 </head>
 <body>
@@ -120,29 +105,20 @@
                     <td><%= check.employeeName %></td>
                     <td>
                       <div class="table-actions">
-                        <a href="/checks/view/<%= check.id %>" class="btn-icon" title="Просмотреть чек">
-                          <svg viewBox="0 0 24 24">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                            <circle cx="12" cy="12" r="3"/>
-                          </svg>
-                        </a>
-                        <a href="/checks/pdf/<%= check.id %>" class="btn-icon" title="Скачать PDF" target="_blank">
-                          <svg viewBox="0 0 24 24">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/>
-                            <line x1="16" y1="17" x2="8" y2="17"/>
-                            <polyline points="10 9 9 9 8 9"/>
+                        <a href="/checks/pdf/<%= check.id %>" class="btn-icon" title="Чек" target="_blank">
+                          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="1.8" fill="none">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
                           </svg>
                         </a>
                         <a href="/checks/edit/<%= check.id %>" class="btn-icon" title="Редактировать">
-                          <svg viewBox="0 0 24 24">
+                          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="1.8" fill="none">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                           </svg>
                         </a>
                         <button class="btn-icon danger" onclick="deleteCheck('<%= check.id %>')" title="Удалить">
-                          <svg viewBox="0 0 24 24">
+                          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="1.8" fill="none">
                             <polyline points="3 6 5 6 21 6"/>
                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                           </svg>
