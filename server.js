@@ -104,18 +104,6 @@ async function deleteFromS3(key) {
     }
 }
 
-// ===== ЭКСПОРТ ФУНКЦИЙ =====
-module.exports = {
-    s3Client,
-    s3Config,
-    BUCKET_NAME,
-    s3Connected,
-    testS3Connection,
-    uploadToS3,
-    downloadFromS3,
-    deleteFromS3
-};
-
 // ===== СОЗДАНИЕ ПАПОК =====
 const SESSIONS_DIR = path.join(__dirname, 'sessions');
 const DATA_DIR = path.join(__dirname, 'data');
@@ -197,16 +185,6 @@ app.use((req, res, next) => {
 const indexRoutes = require('./routes/index');
 app.use('/', indexRoutes);
 
-// ===== СТАТУС S3 =====
-app.get('/api/s3-status', (req, res) => {
-    res.json({
-        connected: s3Connected,
-        timestamp: new Date().toISOString(),
-        bucket: BUCKET_NAME,
-        endpoint: s3Config.endpoint
-    });
-});
-
 // ===== 404 =====
 app.use((req, res) => {
     res.status(404).render('pages/404', { 
@@ -221,3 +199,15 @@ app.listen(PORT, () => {
     console.log('📌 Войдите под admin / admin123');
     console.log('📌 Проверить S3: /api/s3-status');
 });
+
+// ===== ЭКСПОРТ ФУНКЦИЙ =====
+module.exports = {
+    s3Client,
+    s3Config,
+    BUCKET_NAME,
+    s3Connected,
+    testS3Connection,
+    uploadToS3,
+    downloadFromS3,
+    deleteFromS3
+};
