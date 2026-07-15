@@ -916,17 +916,43 @@ exports.deleteService = async (req, res) => {
 // ===== ЧЕКИ =====
 exports.getChecks = async (req, res) => {
     const checks = await readData(CHECKS_FILE);
+    const employees = await readData(EMPLOYEES_FILE);
+    const services = await readData(SERVICES_FILE);
     const permissions = getUserPermissions(req.session.user);
     
+    // Фильтрация по филиалу для не-админов
+    let userBranchId = null;
+    if (req.session.user.role !== 'admin') {
+        const employee = employees.find(e => e.id === req.session.user.employeeId);
+        userBranchId = employee ? employee.branchId : null;
+        if (userBranchId) {
+            // Для не-админов показываем только чеки их филиала
+            // Раскомментировать если нужно:
+            // checks = checks.filter(c => c.branchId === userBranchId);
+        }
+    }
+    
+    // Сортировка по дате (сначала новые)
     checks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    // Обогащаем данные названиями услуг
+    const checksWithInfo = checks.map(check => {
+        const service = services.find(s => s.id === check.serviceId);
+        return {
+            ...check,
+            serviceName: service ? service.name : check.serviceName || 'Не указана',
+            servicePrice: service ? parseFloat(service.price.replace(/[^0-9.]/g, '')) : (check.amount || 0)
+        };
+    });
     
     res.render('pages/checks/index', {
         title: 'Чеки — DEEP GAZE',
         user: req.session.user,
         activePage: '/checks',
-        checks: checks,
+        checks: checksWithInfo,
         shortId: shortId,
-        permissions: permissions
+        permissions: permissions,
+        isAdmin: req.session.user.role === 'admin'
     });
 };
 
@@ -949,6 +975,10 @@ exports.getCheckForm = async (req, res) => {
     if (id) {
         const checks = await readData(CHECKS_FILE);
         check = checks.find(c => c.id === id);
+        if (check) {
+            const service = services.find(s => s.id === check.serviceId);
+            check.serviceName = service ? service.name : check.serviceName;
+        }
     }
     
     res.render('pages/checks/form', {
@@ -965,7 +995,7 @@ exports.getCheckForm = async (req, res) => {
 };
 
 exports.saveCheck = async (req, res) => {
-    const { id, serviceId, amount, client, status, paymentMethod, branchId } = req.body;
+    const { id, clientName, phone, serviceId, amount, paymentMethod, status, branchId } = req.body;
     const checks = await readData(CHECKS_FILE);
     const services = await readData(SERVICES_FILE);
     const employees = await readData(EMPLOYEES_FILE);
@@ -978,32 +1008,36 @@ exports.saveCheck = async (req, res) => {
     }
     
     const finalBranchId = branchId || userBranchId || '';
+    const service = services.find(s => s.id === serviceId);
+    const branch = branches.find(b => b.id === finalBranchId);
+    const parsedAmount = parseFloat(amount) || 0;
     
     if (id) {
         const index = checks.findIndex(c => c.id === id);
         if (index !== -1) {
             checks[index] = { 
                 ...checks[index], 
-                serviceId, 
-                amount: parseFloat(amount) || 0, 
-                client, 
-                status,
-                paymentMethod,
-                branchId: finalBranchId
+                clientName: clientName || checks[index].clientName,
+                phone: phone || checks[index].phone,
+                serviceId: serviceId || checks[index].serviceId,
+                serviceName: service ? service.name : checks[index].serviceName,
+                amount: parsedAmount,
+                paymentMethod: paymentMethod || checks[index].paymentMethod,
+                status: status || checks[index].status,
+                branchId: finalBranchId || checks[index].branchId,
+                branchName: branch ? branch.address : checks[index].branchName
             };
         }
     } else {
-        const service = services.find(s => s.id === serviceId);
-        const branch = branches.find(b => b.id === finalBranchId);
-        
         checks.push({
             id: generateId(),
+            clientName: clientName || 'Клиент',
+            phone: phone || '',
             serviceId: serviceId || '',
             serviceName: service ? service.name : '',
-            amount: parseFloat(amount) || 0,
-            client: client || '',
-            status: status || 'Оплачен',
+            amount: parsedAmount,
             paymentMethod: paymentMethod || 'Наличные',
+            status: status || 'Оплачен',
             branchId: finalBranchId,
             branchName: branch ? branch.address : '',
             createdBy: req.session.user.name || 'Менеджер',
