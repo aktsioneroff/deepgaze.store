@@ -904,3 +904,447 @@ exports.deleteService = async (req, res) => {
     await writeData(SERVICES_FILE, filtered);
     res.json({ success: true });
 };
+
+// ===== ЧЕКИ =====
+exports.getChecks = async (req, res) => {
+    const checks = await readData('checks.json');
+    const permissions = getUserPermissions(req.session.user);
+    
+    checks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    res.render('pages/checks/index', {
+        title: 'Чеки — DEEP GAZE',
+        user: req.session.user,
+        activePage: '/checks',
+        checks: checks,
+        shortId: shortId,
+        permissions: permissions
+    });
+};
+
+exports.getCheckForm = async (req, res) => {
+    const id = req.params.id;
+    let check = null;
+    const services = await readData(SERVICES_FILE);
+    const employees = await readData(EMPLOYEES_FILE);
+    const branches = await readData(BRANCHES_FILE);
+    const permissions = getUserPermissions(req.session.user);
+    
+    let userBranchId = null;
+    let userBranch = null;
+    if (req.session.user.role !== 'admin') {
+        const employee = employees.find(e => e.id === req.session.user.employeeId);
+        userBranchId = employee ? employee.branchId : null;
+        userBranch = branches.find(b => b.id === userBranchId);
+    }
+    
+    if (id) {
+        const checks = await readData('checks.json');
+        check = checks.find(c => c.id === id);
+    }
+    
+    res.render('pages/checks/form', {
+        title: (id ? 'Редактирование' : 'Создание') + ' чека — DEEP GAZE',
+        user: req.session.user,
+        activePage: '/checks',
+        check: check,
+        services: services,
+        isEdit: !!id,
+        permissions: permissions,
+        userBranch: userBranch,
+        isAdmin: req.session.user.role === 'admin'
+    });
+};
+
+exports.saveCheck = async (req, res) => {
+    const { id, clientName, clientPhone, serviceId, discount, paymentMethod, status } = req.body;
+    const checks = await readData('checks.json');
+    const services = await readData(SERVICES_FILE);
+    const employees = await readData(EMPLOYEES_FILE);
+    const branches = await readData(BRANCHES_FILE);
+    
+    const service = services.find(s => s.id === serviceId);
+    const servicePrice = service ? parseFloat(service.price.replace(/[^0-9.]/g, '')) || 0 : 0;
+    
+    const discountPercent = parseFloat(discount) || 0;
+    const discountAmount = (servicePrice * discountPercent) / 100;
+    const total = servicePrice - discountAmount;
+    
+    let userBranchId = null;
+    let userBranchName = 'Не указан';
+    if (req.session.user.role !== 'admin') {
+        const employee = employees.find(e => e.id === req.session.user.employeeId);
+        userBranchId = employee ? employee.branchId : null;
+        const branch = branches.find(b => b.id === userBranchId);
+        userBranchName = branch ? branch.address : 'Не указан';
+    }
+    
+    const checkData = {
+        clientName: clientName || 'Клиент',
+        clientPhone: clientPhone || '',
+        serviceId: serviceId || '',
+        serviceName: service ? service.name : 'Не указана',
+        servicePrice: servicePrice,
+        discount: discountPercent,
+        discountAmount: discountAmount,
+        total: total,
+        paymentMethod: paymentMethod || 'Наличные',
+        status: status || 'Оплачен',
+        createdBy: req.session.user.name || 'Менеджер',
+        branchId: userBranchId || '',
+        branchName: userBranchName,
+        createdAt: new Date().toISOString()
+    };
+    
+    if (id) {
+        const index = checks.findIndex(c => c.id === id);
+        if (index !== -1) {
+            checks[index] = { ...checks[index], ...checkData };
+        }
+    } else {
+        checks.push({
+            id: generateId(),
+            ...checkData,
+            createdAt: new Date().toISOString()
+        });
+    }
+    
+    await writeData('checks.json', checks);
+    res.redirect('/checks');
+};
+
+exports.deleteCheck = async (req, res) => {
+    const id = req.params.id;
+    const checks = await readData('checks.json');
+    const filtered = checks.filter(c => c.id !== id);
+    await writeData('checks.json', filtered);
+    res.json({ success: true });
+};
+
+exports.generateCheckPDF = async (req, res) => {
+    const id = req.params.id;
+    const checks = await readData('checks.json');
+    const check = checks.find(c => c.id === id);
+    
+    if (!check) {
+        return res.status(404).send('Чек не найден');
+    }
+    
+    const employees = await readData(EMPLOYEES_FILE);
+    const branches = await readData(BRANCHES_FILE);
+    
+    const employee = employees.find(e => e.id === req.session.user.employeeId);
+    const managerName = req.session.user.name || 'Менеджер';
+    
+    const branch = branches.find(b => b.id === check.branchId);
+    const branchAddress = branch ? branch.address : check.branchName || 'Не указан';
+    
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Чек №${shortId(check.id)}</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+                font-family: 'Inter', Arial, sans-serif;
+                background: #f5f5f5;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                padding: 20px;
+            }
+            .check-page {
+                width: 210mm;
+                height: 297mm;
+                background: white;
+                padding: 10mm;
+                display: flex;
+                flex-direction: column;
+                gap: 5mm;
+            }
+            .check-slip {
+                flex: 1;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                padding: 8mm;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                background: white;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            }
+            .check-slip:last-child {
+                border-top: 2px dashed #ddd;
+            }
+            .check-header {
+                text-align: center;
+                border-bottom: 2px solid #c8a45c;
+                padding-bottom: 5px;
+                margin-bottom: 8px;
+            }
+            .check-header .logo {
+                font-family: 'Space Grotesk', sans-serif;
+                font-size: 18px;
+                font-weight: 700;
+                color: #050508;
+            }
+            .check-header .logo span { color: #c8a45c; }
+            .check-header .sub {
+                font-size: 10px;
+                color: #888;
+                margin-top: 2px;
+            }
+            .check-body {
+                flex: 1;
+                padding: 5px 0;
+            }
+            .check-row {
+                display: flex;
+                justify-content: space-between;
+                padding: 3px 0;
+                font-size: 11px;
+                border-bottom: 1px solid #f0f0f0;
+            }
+            .check-row .label {
+                color: #666;
+                font-weight: 500;
+            }
+            .check-row .value {
+                color: #050508;
+                font-weight: 600;
+            }
+            .check-row.total {
+                border-top: 2px solid #c8a45c;
+                padding-top: 8px;
+                margin-top: 5px;
+                font-size: 14px;
+            }
+            .check-row.total .value {
+                color: #c8a45c;
+                font-size: 16px;
+            }
+            .check-footer {
+                display: flex;
+                justify-content: space-between;
+                margin-top: 10px;
+                padding-top: 8px;
+                border-top: 1px solid #eee;
+                font-size: 9px;
+                color: #999;
+            }
+            .check-signatures {
+                display: flex;
+                justify-content: space-between;
+                margin-top: 10px;
+                padding-top: 8px;
+            }
+            .signature-block {
+                text-align: center;
+                flex: 1;
+            }
+            .signature-block .line {
+                width: 80%;
+                height: 1px;
+                border-bottom: 1px solid #050508;
+                margin: 20px auto 4px auto;
+            }
+            .signature-block .label {
+                font-size: 8px;
+                color: #888;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+            .check-divider {
+                text-align: center;
+                color: #ccc;
+                font-size: 14px;
+                padding: 2px 0;
+                letter-spacing: 4px;
+            }
+            .payment-method {
+                display: inline-block;
+                padding: 2px 8px;
+                border-radius: 12px;
+                font-size: 9px;
+                font-weight: 600;
+                background: #f0f0f0;
+                color: #555;
+            }
+            .payment-method.card { background: #e8f4fd; color: #2196F3; }
+            .payment-method.cash { background: #e8f5e9; color: #4CAF50; }
+            .payment-method.transfer { background: #fff3e0; color: #FF9800; }
+            .payment-method.account { background: #f3e5f5; color: #9C27B0; }
+            .status-badge {
+                display: inline-block;
+                padding: 2px 10px;
+                border-radius: 12px;
+                font-size: 8px;
+                font-weight: 600;
+                text-transform: uppercase;
+            }
+            .status-badge.paid { background: #e8f5e9; color: #4CAF50; }
+            .status-badge.pending { background: #fff3e0; color: #FF9800; }
+            .status-badge.canceled { background: #fce4ec; color: #e74c3c; }
+        </style>
+    </head>
+    <body>
+        <div class="check-page">
+            <div class="check-slip">
+                <div class="check-header">
+                    <div class="logo">DEEP<span>.</span>GAZE</div>
+                    <div class="sub">Студия макросъёмки радужки глаза</div>
+                </div>
+                <div class="check-body">
+                    <div class="check-row">
+                        <span class="label">№ чека</span>
+                        <span class="value">${shortId(check.id)}</span>
+                    </div>
+                    <div class="check-row">
+                        <span class="label">Дата</span>
+                        <span class="value">${new Date(check.createdAt).toLocaleDateString('ru-RU')}</span>
+                    </div>
+                    <div class="check-row">
+                        <span class="label">Клиент</span>
+                        <span class="value">${check.clientName}</span>
+                    </div>
+                    <div class="check-row">
+                        <span class="label">Телефон</span>
+                        <span class="value">${check.clientPhone || '—'}</span>
+                    </div>
+                    <div class="check-row">
+                        <span class="label">Услуга</span>
+                        <span class="value">${check.serviceName}</span>
+                    </div>
+                    <div class="check-row">
+                        <span class="label">Стоимость</span>
+                        <span class="value">${check.servicePrice.toLocaleString()} ₽</span>
+                    </div>
+                    ${check.discount > 0 ? `
+                    <div class="check-row">
+                        <span class="label">Скидка</span>
+                        <span class="value">${check.discount}% (${check.discountAmount.toLocaleString()} ₽)</span>
+                    </div>
+                    ` : ''}
+                    <div class="check-row total">
+                        <span class="label">ИТОГО</span>
+                        <span class="value">${check.total.toLocaleString()} ₽</span>
+                    </div>
+                    <div class="check-row">
+                        <span class="label">Оплата</span>
+                        <span class="value"><span class="payment-method ${check.paymentMethod === 'Оплата картой' ? 'card' : check.paymentMethod === 'Оплата наличными' ? 'cash' : check.paymentMethod === 'Перевод' ? 'transfer' : 'account'}">${check.paymentMethod}</span></span>
+                    </div>
+                    <div class="check-row">
+                        <span class="label">Статус</span>
+                        <span class="value"><span class="status-badge ${check.status === 'Оплачен' ? 'paid' : check.status === 'Ожидает оплаты' ? 'pending' : 'canceled'}">${check.status}</span></span>
+                    </div>
+                    <div class="check-row">
+                        <span class="label">Менеджер</span>
+                        <span class="value">${check.createdBy}</span>
+                    </div>
+                    <div class="check-row">
+                        <span class="label">Филиал</span>
+                        <span class="value">${check.branchName}</span>
+                    </div>
+                </div>
+                <div class="check-footer">
+                    <span>Барнаул, пр-т Ленина, 54</span>
+                    <span>+7 (999) 123-45-67</span>
+                </div>
+                <div class="check-signatures">
+                    <div class="signature-block">
+                        <div class="line"></div>
+                        <div class="label">Подпись клиента</div>
+                    </div>
+                    <div class="signature-block">
+                        <div class="line"></div>
+                        <div class="label">Подпись менеджера</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="check-divider">- - - - - - - - - - - - - - - - - - - - -</div>
+
+            <div class="check-slip">
+                <div class="check-header">
+                    <div class="logo">DEEP<span>.</span>GAZE</div>
+                    <div class="sub">КОПИЯ • Студия макросъёмки радужки глаза</div>
+                </div>
+                <div class="check-body">
+                    <div class="check-row">
+                        <span class="label">№ чека</span>
+                        <span class="value">${shortId(check.id)}</span>
+                    </div>
+                    <div class="check-row">
+                        <span class="label">Дата</span>
+                        <span class="value">${new Date(check.createdAt).toLocaleDateString('ru-RU')}</span>
+                    </div>
+                    <div class="check-row">
+                        <span class="label">Клиент</span>
+                        <span class="value">${check.clientName}</span>
+                    </div>
+                    <div class="check-row">
+                        <span class="label">Телефон</span>
+                        <span class="value">${check.clientPhone || '—'}</span>
+                    </div>
+                    <div class="check-row">
+                        <span class="label">Услуга</span>
+                        <span class="value">${check.serviceName}</span>
+                    </div>
+                    <div class="check-row">
+                        <span class="label">Стоимость</span>
+                        <span class="value">${check.servicePrice.toLocaleString()} ₽</span>
+                    </div>
+                    ${check.discount > 0 ? `
+                    <div class="check-row">
+                        <span class="label">Скидка</span>
+                        <span class="value">${check.discount}% (${check.discountAmount.toLocaleString()} ₽)</span>
+                    </div>
+                    ` : ''}
+                    <div class="check-row total">
+                        <span class="label">ИТОГО</span>
+                        <span class="value">${check.total.toLocaleString()} ₽</span>
+                    </div>
+                    <div class="check-row">
+                        <span class="label">Оплата</span>
+                        <span class="value"><span class="payment-method ${check.paymentMethod === 'Оплата картой' ? 'card' : check.paymentMethod === 'Оплата наличными' ? 'cash' : check.paymentMethod === 'Перевод' ? 'transfer' : 'account'}">${check.paymentMethod}</span></span>
+                    </div>
+                    <div class="check-row">
+                        <span class="label">Статус</span>
+                        <span class="value"><span class="status-badge ${check.status === 'Оплачен' ? 'paid' : check.status === 'Ожидает оплаты' ? 'pending' : 'canceled'}">${check.status}</span></span>
+                    </div>
+                    <div class="check-row">
+                        <span class="label">Менеджер</span>
+                        <span class="value">${check.createdBy}</span>
+                    </div>
+                    <div class="check-row">
+                        <span class="label">Филиал</span>
+                        <span class="value">${check.branchName}</span>
+                    </div>
+                </div>
+                <div class="check-footer">
+                    <span>Барнаул, пр-т Ленина, 54</span>
+                    <span>+7 (999) 123-45-67</span>
+                </div>
+                <div class="check-signatures">
+                    <div class="signature-block">
+                        <div class="line"></div>
+                        <div class="label">Подпись клиента</div>
+                    </div>
+                    <div class="signature-block">
+                        <div class="line"></div>
+                        <div class="label">Подпись менеджера</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=check_${shortId(check.id)}.pdf`);
+    res.send(html);
+};
