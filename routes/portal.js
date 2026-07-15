@@ -11,7 +11,7 @@ function checkSession(req, res, next) {
     }
 }
 
-// ===== ОБЕРТКА ДЛЯ ASYNC ФУНКЦИЙ =====
+// ===== ОБЕРТКА ДЛЯ ASYNC =====
 const asyncHandler = fn => (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
 };
@@ -72,32 +72,24 @@ router.get('/services/edit/:id', checkSession, asyncHandler(portalController.get
 router.post('/services/save', checkSession, asyncHandler(portalController.saveService));
 router.delete('/services/delete/:id', checkSession, asyncHandler(portalController.deleteService));
 
-// ===== API СТАТУС S3 =====
-router.get('/api/s3-status', (req, res) => {
-    try {
-        const s3 = require('../config/s3');
-        res.json({
-            connected: s3.s3Connected || false,
-            timestamp: new Date().toISOString(),
-            bucket: s3.BUCKET_NAME || null,
-            endpoint: s3.s3Config ? s3.s3Config.endpoint : null
-        });
-    } catch (error) {
-        res.json({
-            connected: false,
-            timestamp: new Date().toISOString(),
-            error: error.message
-        });
-    }
-});
-
-// ===== API ПРОВЕРКИ СЕССИИ =====
+// ===== API =====
 router.get('/api/check-session', (req, res) => {
     if (req.session && req.session.user) {
         res.json({ success: true, user: req.session.user });
     } else {
         res.status(401).json({ success: false, error: 'Не авторизован' });
     }
+});
+
+// ===== S3 СТАТУС =====
+router.get('/api/s3-status', (req, res) => {
+    const server = require('../server');
+    res.json({
+        connected: server.s3Connected || false,
+        bucket: server.BUCKET_NAME || null,
+        endpoint: server.s3Config ? server.s3Config.endpoint : null,
+        timestamp: new Date().toISOString()
+    });
 });
 
 module.exports = router;
