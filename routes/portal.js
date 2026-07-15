@@ -2,6 +2,90 @@ const express = require('express');
 const router = express.Router();
 const portalController = require('../controllers/portalController');
 
+// ===== ПУБЛИЧНЫЕ API (для сайта) =====
+router.get('/api/partners', async (req, res) => {
+    try {
+        const partners = await portalController.getPartnersData();
+        res.json(partners);
+    } catch (error) {
+        console.error('Ошибка получения партнеров:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+router.get('/api/portfolio', async (req, res) => {
+    try {
+        const portfolio = await portalController.getPortfolioData();
+        res.json(portfolio);
+    } catch (error) {
+        console.error('Ошибка получения портфолио:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+router.get('/api/services', async (req, res) => {
+    try {
+        const services = await portalController.getServicesData();
+        res.json(services);
+    } catch (error) {
+        console.error('Ошибка получения услуг:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// ===== API ДЛЯ ЗАЯВОК (публичный - с сайта) =====
+router.post('/api/requests', async (req, res) => {
+    try {
+        const { name, phone, date, time, service, serviceId, source } = req.body;
+        const requests = await portalController.readData('requests.json');
+        
+        const existing = requests.find(r => r.date === date && r.time === time && r.status !== 'Отменена');
+        if (existing) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Это время уже занято. Пожалуйста, выберите другое время.' 
+            });
+        }
+        
+        const newRequest = {
+            id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+            name: name || 'Клиент',
+            phone: phone || '',
+            date: date || new Date().toISOString().split('T')[0],
+            time: time || '12:00',
+            service: service || 'Не указана',
+            serviceId: serviceId || '',
+            source: source || 'Сайт',
+            status: 'Новая',
+            createdAt: new Date().toISOString(),
+            createdBy: 'Сайт',
+            branchId: ''
+        };
+        
+        requests.push(newRequest);
+        await portalController.writeData('requests.json', requests);
+        res.json({ success: true, message: 'Заявка отправлена!', id: newRequest.id });
+    } catch (error) {
+        console.error('Ошибка создания заявки:', error);
+        res.status(500).json({ success: false, message: 'Ошибка сервера' });
+    }
+});
+
+// ===== API ДЛЯ ПОЛУЧЕНИЯ ЗАНЯТЫХ ВРЕМЕН =====
+router.get('/api/occupied-times', async (req, res) => {
+    try {
+        const { date } = req.query;
+        const requests = await portalController.readData('requests.json');
+        const occupied = requests
+            .filter(r => r.date === date && r.status !== 'Отменена')
+            .map(r => r.time);
+        res.json({ occupied });
+    } catch (error) {
+        console.error('Ошибка получения занятых времен:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
 // ===== ПРОВЕРКА СЕССИИ =====
 function checkSession(req, res, next) {
     if (req.session && req.session.user) {
@@ -72,24 +156,13 @@ router.get('/services/edit/:id', checkSession, asyncHandler(portalController.get
 router.post('/services/save', checkSession, asyncHandler(portalController.saveService));
 router.delete('/services/delete/:id', checkSession, asyncHandler(portalController.deleteService));
 
-// ===== API =====
+// ===== API ПРОВЕРКИ СЕССИИ =====
 router.get('/api/check-session', (req, res) => {
     if (req.session && req.session.user) {
         res.json({ success: true, user: req.session.user });
     } else {
         res.status(401).json({ success: false, error: 'Не авторизован' });
     }
-});
-
-// ===== S3 СТАТУС =====
-router.get('/api/s3-status', (req, res) => {
-    const server = require('../server');
-    res.json({
-        connected: server.s3Connected || false,
-        bucket: server.BUCKET_NAME || null,
-        endpoint: server.s3Config ? server.s3Config.endpoint : null,
-        timestamp: new Date().toISOString()
-    });
 });
 
 module.exports = router;
