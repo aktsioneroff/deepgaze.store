@@ -965,5 +965,212 @@ exports.getCheckForm = async (req, res) => {
 };
 
 exports.saveCheck = async (req, res) => {
-    const
+    const { id, serviceId, amount, client, status, paymentMethod, branchId } = req.body;
+    const checks = await readData(CHECKS_FILE);
+    const services = await readData(SERVICES_FILE);
+    const employees = await readData(EMPLOYEES_FILE);
+    const branches = await readData(BRANCHES_FILE);
+    
+    let userBranchId = null;
+    if (req.session.user.role !== 'admin') {
+        const employee = employees.find(e => e.id === req.session.user.employeeId);
+        userBranchId = employee ? employee.branchId : null;
+    }
+    
+    const finalBranchId = branchId || userBranchId || '';
+    
+    if (id) {
+        const index = checks.findIndex(c => c.id === id);
+        if (index !== -1) {
+            checks[index] = { 
+                ...checks[index], 
+                serviceId, 
+                amount: parseFloat(amount) || 0, 
+                client, 
+                status,
+                paymentMethod,
+                branchId: finalBranchId
+            };
+        }
+    } else {
+        const service = services.find(s => s.id === serviceId);
+        const branch = branches.find(b => b.id === finalBranchId);
+        
+        checks.push({
+            id: generateId(),
+            serviceId: serviceId || '',
+            serviceName: service ? service.name : '',
+            amount: parseFloat(amount) || 0,
+            client: client || '',
+            status: status || 'Оплачен',
+            paymentMethod: paymentMethod || 'Наличные',
+            branchId: finalBranchId,
+            branchName: branch ? branch.address : '',
+            createdBy: req.session.user.name || 'Менеджер',
+            createdAt: new Date().toISOString()
+        });
+    }
+    
+    await writeData(CHECKS_FILE, checks);
+    res.redirect('/checks');
+};
+
+exports.deleteCheck = async (req, res) => {
+    const id = req.params.id;
+    const checks = await readData(CHECKS_FILE);
+    const filtered = checks.filter(c => c.id !== id);
+    await writeData(CHECKS_FILE, filtered);
+    res.json({ success: true });
+};
+
+// ===== АВТОРИЗАЦИЯ ДЛЯ ПОРТАЛА =====
+exports.getLogin = (req, res) => {
+    if (req.session.user) {
+        return res.redirect('/dashboard');
+    }
+    res.render('pages/login', {
+        title: 'Вход в портал — DEEP GAZE',
+        error: req.query.error || null
+    });
+};
+
+exports.login = async (req, res) => {
+    const { login, password } = req.body;
+    const employees = await readData(EMPLOYEES_FILE);
+    
+    // Проверка в списке сотрудников
+    const employee = employees.find(e => e.login === login && e.password === password);
+    
+    if (employee) {
+        // Определяем роль на основе должности
+        let role = 'user';
+        if (employee.position === 'Генеральный директор' || employee.position === 'Директор') {
+            role = 'admin';
+        } else if (employee.position === 'Управляющий') {
+            role = 'manager';
+        }
+        
+        req.session.user = {
+            login: login,
+            name: employee.fullName,
+            position: employee.position,
+            role: role,
+            employeeId: employee.id,
+            branchId: employee.branchId
+        };
+        return res.redirect('/dashboard');
+    }
+    
+    // Проверка для администратора (запасной вариант)
+    if (login === 'admin' && password === 'admin123') {
+        req.session.user = {
+            login: 'admin',
+            name: 'Администратор',
+            position: 'Администратор',
+            role: 'admin',
+            employeeId: null,
+            branchId: null
+        };
+        return res.redirect('/dashboard');
+    }
+    
+    res.redirect('/login?error=Неверный логин или пароль');
+};
+
+exports.logout = (req, res) => {
+    req.session.destroy(() => {
+        res.redirect('/');
+    });
+};
+
+exports.requireAuth = (req, res, next) => {
+    if (req.session.user) {
+        next();
+    } else {
+        res.redirect('/login?error=Требуется авторизация');
+    }
+};
+
+// ===== ГЛАВНАЯ СТРАНИЦА =====
+exports.getIndex = async (req, res) => {
+    const services = await readData(SERVICES_FILE);
+    const portfolio = await readData(PORTFOLIO_FILE);
+    
+    res.render('pages/index', {
+        title: 'DEEP GAZE — Студия макросъемки радужки глаза',
+        user: req.session.user || null,
+        services: services,
+        portfolio: portfolio,
+        error: null
+    });
+};
+
+// ===== ЭКСПОРТ ВСЕХ ФУНКЦИЙ =====
+module.exports = {
+    // Авторизация
+    getLogin,
+    login,
+    logout,
+    requireAuth,
+    
+    // Главная
+    getIndex,
+    
+    // Дашборд
+    getDashboard,
+    
+    // Заглушка
+    getPlaceholder,
+    
+    // Рефералы
+    getReferrals,
+    getReferralForm,
+    saveReferral,
+    deleteReferral,
+    searchReferral,
+    addBonus,
+    subtractBonus,
+    
+    // Заявки
+    getRequests,
+    getRequestForm,
+    saveRequest,
+    deleteRequest,
+    updateRequestStatus,
+    
+    // Филиалы
+    getBranches,
+    getBranchForm,
+    saveBranch,
+    deleteBranch,
+    
+    // Сотрудники
+    getEmployees,
+    getEmployeeForm,
+    saveEmployee,
+    deleteEmployee,
+    
+    // Партнёры
+    getPartners,
+    getPartnerForm,
+    savePartner,
+    deletePartner,
+    
+    // Портфолио
+    getPortfolio,
+    getPortfolioForm,
+    savePortfolio,
+    deletePortfolio,
+    
+    // Услуги
+    getServices,
+    getServiceForm,
+    saveService,
+    deleteService,
+    
+    // Чеки
+    getChecks,
+    getCheckForm,
+    saveCheck,
+    deleteCheck
 };
