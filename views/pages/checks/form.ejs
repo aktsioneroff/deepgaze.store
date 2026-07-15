@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  
+  <link rel="icon" type="image/x-icon" href="/ico/favicon.ico">
+  <link rel="apple-touch-icon" href="/ico/apple-touch-icon.png">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/portal.css">
+  <link rel="stylesheet" href="/css/portal-modules.css">
+  
+  <style>
+    .module-form .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .module-form .form-row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+    }
+    .employee-info {
+      padding: 0.8rem 1rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+    .employee-info .highlight {
+      color: var(--text);
+      font-weight: 600;
+    }
+    .price-preview {
+      padding: 0.8rem 1rem;
+      border-radius: 0.5rem;
+      background: rgba(200, 164, 92, 0.08);
+      border: 1px solid rgba(200, 164, 92, 0.2);
+      text-align: center;
+      font-size: 1.1rem;
+    }
+    .price-preview .amount {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .price-preview .discount {
+      color: #e74c3c;
+      font-size: 0.9rem;
+    }
+    @media (max-width: 600px) {
+      .module-form .form-row,
+      .module-form .form-row-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  
+  <div class="portal-wrapper">
+    <%- include('../../partials/sidebar', { activePage: '/checks', user: user, permissions: permissions }) %>
+    
+    <main class="portal-main">
+      <header class="portal-header">
+        <div class="portal-header-left">
+          <button class="mobile-sidebar-toggle" onclick="toggleSidebar()" title="Открыть меню">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+          <h1>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.5rem;">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+            </svg>
+            <%= isEdit ? 'Редактирование' : 'Создание' %> чека
+          </h1>
+        </div>
+        <div class="portal-header-right">
+          <span class="header-date"><%= new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) %></span>
+        </div>
+      </header>
+      
+      <div class="portal-content">
+        <div class="module-form">
+          <form action="/checks/save" method="POST">
+            <% if (isEdit) { %>
+              <input type="hidden" name="id" value="<%= check.id %>">
+            <% } %>
+            
+            <!-- Информация о сотруднике -->
+            <div class="employee-info">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.4rem;">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              <span class="highlight"><%= employee ? employee.fullName : user.name %></span>
+              <span style="color:var(--text-muted);margin:0 0.3rem;">•</span>
+              <span><%= employee ? employee.position : user.position || 'Сотрудник' %></span>
+              <span style="color:var(--text-muted);margin:0 0.3rem;">•</span>
+              <span style="color:var(--text-muted);font-size:0.75rem;">Филиал: <%= employee && employee.branchId ? 'Привязан' : 'Не указан' %></span>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="clientName">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  Имя клиента
+                </label>
+                <input type="text" id="clientName" name="clientName" class="form-control" placeholder="Иван Петров" value="<%= check ? check.clientName : '' %>" required>
+              </div>
+              
+              <div class="form-group">
+                <label for="clientPhone">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                  </svg>
+                  Телефон клиента
+                </label>
+                <input type="tel" id="clientPhone" name="clientPhone" class="form-control" placeholder="+7 (999) 123-45-67" value="<%= check ? check.clientPhone : '' %>">
+              </div>
+            </div>
+            
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="serviceId">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                  </svg>
+                  Услуга
+                </label>
+                <select id="serviceId" name="serviceId" class="form-control" required onchange="updatePrice()">
+                  <option value="">Выберите услугу</option>
+                  <% services.forEach(function(service) { %>
+                    <option value="<%= service.id %>" data-price="<%= service.price.replace(/[^0-9]/g, '') %>" <%= check && check.serviceId === service.id ? 'selected' : '' %>>
+                      <%= service.name %> - <%= service.price %>
+                    </option>
+                  <% }) %>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="price">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                  </svg>
+                  Стоимость (₽)
+                </label>
+                <input type="number" id="price" name="price" class="form-control" placeholder="0" value="<%= check ? check.price : '' %>" required oninput="updatePrice()">
+              </div>
+              
+              <div class="form-group">
+                <label for="discount">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  Скидка (%)
+                </label>
+                <input type="number" id="discount" name="discount" class="form-control" placeholder="0" min="0" max="50" value="<%= check ? check.discount : 0 %>" oninput="updatePrice()">
+                <div class="field-hint" style="font-size:0.7rem;color:var(--text-muted);margin-top:0.2rem;">Максимум 50%</div>
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="paymentMethod">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                    <line x1="1" y1="10" x2="23" y2="10"/>
+                  </svg>
+                  Способ оплаты
+                </label>
+                <select id="paymentMethod" name="paymentMethod" class="form-control">
+                  <option value="Наличными" <%= check && check.paymentMethod === 'Наличными' ? 'selected' : '' %>>Наличными</option>
+                  <option value="Банковская карта" <%= check && check.paymentMethod === 'Банковская карта' ? 'selected' : '' %>>Банковская карта</option>
+                  <option value="Перевод" <%= check && check.paymentMethod === 'Перевод' ? 'selected' : '' %>>Перевод</option>
+                  <option value="Расчётный счёт" <%= check && check.paymentMethod === 'Расчётный счёт' ? 'selected' : '' %>>Расчётный счёт</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="notes">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.3rem;">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                  </svg>
+                  Примечание
+                </label>
+                <input type="text" id="notes" name="notes" class="form-control" placeholder="Дополнительная информация" value="<%= check ? check.notes : '' %>">
+              </div>
+            </div>
+            
+            <!-- Предпросмотр итога -->
+            <div class="price-preview" id="pricePreview">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+                <span>Итого к оплате:</span>
+                <span class="amount" id="finalPriceDisplay">0 ₽</span>
+              </div>
+              <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.3rem;" id="discountDisplay"></div>
+            </div>
+            
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:0.3rem;">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                <%= isEdit ? 'Сохранить' : 'Создать чек' %>
+              </button>
+              <a href="/checks" class="btn btn-outline">Отмена</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  
+  <script>
+    function updatePrice() {
+      const serviceSelect = document.getElementById('serviceId');
+      const priceInput = document.getElementById('price');
+      const discountInput = document.getElementById('discount');
+      const finalDisplay = document.getElementById('finalPriceDisplay');
+      const discountDisplay = document.getElementById('discountDisplay');
+      
+      // Если выбрана услуга, подтягиваем цену
+      const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+      if (selectedOption && selectedOption.value) {
+        const price = selectedOption.getAttribute('data-price');
+        if (price && !document.getElementById('price').value) {
+          priceInput.value = price;
+        }
+      }
+      
+      const price = parseFloat(priceInput.value) || 0;
+      const discount = parseFloat(discountInput.value) || 0;
+      const finalPrice = price - (price * discount / 100);
+      
+      finalDisplay.textContent = Math.round(finalPrice * 100) / 100 + ' ₽';
+      
+      if (discount > 0) {
+        discountDisplay.textContent = 'Скидка ' + discount + '% (экономия ' + Math.round((price * discount / 100) * 100) / 100 + ' ₽)';
+        discountDisplay.style.display = 'block';
+      } else {
+        discountDisplay.textContent = '';
+        discountDisplay.style.display = 'none';
+      }
+    }
+    
+    // Обновляем при загрузке
+    document.addEventListener('DOMContentLoaded', updatePrice);
+  </script>
+  
+  <script src="/js/portal.js"></script>
+</body>
+</html>
