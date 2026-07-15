@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  
+  <link rel="icon" type="image/x-icon" href="/ico/favicon.ico">
+  <link rel="apple-touch-icon" href="/ico/apple-touch-icon.png">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/portal.css">
+  <link rel="stylesheet" href="/css/portal-modules.css">
+  
+  <style>
+    .check-number {
+      font-family: 'Space Grotesk', monospace;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .check-total {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .check-status {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 2rem;
+      font-size: 0.65rem;
+      font-weight: 600;
+    }
+    .check-status.paid {
+      background: rgba(46, 204, 113, 0.15);
+      color: #2ecc71;
+    }
+    .check-status.unpaid {
+      background: rgba(231, 76, 60, 0.15);
+      color: #e74c3c;
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  
+  <div class="portal-wrapper">
+    <%- include('../../partials/sidebar', { activePage: '/checks', user: user, permissions: permissions }) %>
+    
+    <main class="portal-main">
+      <header class="portal-header">
+        <div class="portal-header-left">
+          <button class="mobile-sidebar-toggle" onclick="toggleSidebar()" title="Открыть меню">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+          <h1>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" style="display:inline-block;vertical-align:middle;margin-right:0.5rem;">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+            </svg>
+            Чеки
+          </h1>
+        </div>
+        <div class="portal-header-right">
+          <span class="header-date"><%= new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) %></span>
+        </div>
+      </header>
+      
+      <div class="portal-content">
+        <div class="module-header">
+          <h2>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+            </svg>
+            Список чеков
+          </h2>
+          <div class="module-actions">
+            <a href="/checks/add" class="btn btn-primary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:0.3rem;">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Создать чек
+            </a>
+          </div>
+        </div>
+        
+        <div class="table-wrapper">
+          <% if (checks && checks.length > 0) { %>
+            <table>
+              <thead>
+                <tr>
+                  <th>№</th>
+                  <th>Номер</th>
+                  <th>Клиент</th>
+                  <th>Телефон</th>
+                  <th>Услуга</th>
+                  <th>Сумма</th>
+                  <th>Сотрудник</th>
+                  <th>Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% checks.forEach(function(check, index) { %>
+                  <tr>
+                    <td><span class="table-id"><%= index + 1 %></span></td>
+                    <td><span class="check-number"><%= check.checkNumber %></span></td>
+                    <td><strong><%= check.clientName %></strong></td>
+                    <td><%= check.clientPhone %></td>
+                    <td><%= check.serviceName %></td>
+                    <td><span class="check-total"><%= check.finalPrice %> ₽</span></td>
+                    <td><%= check.employeeName %></td>
+                    <td>
+                      <div class="table-actions">
+                        <a href="/checks/view/<%= check.id %>" class="btn-icon" title="Просмотреть чек">
+                          <svg viewBox="0 0 24 24">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        </a>
+                        <a href="/checks/pdf/<%= check.id %>" class="btn-icon" title="Скачать PDF" target="_blank">
+                          <svg viewBox="0 0 24 24">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10 9 9 9 8 9"/>
+                          </svg>
+                        </a>
+                        <a href="/checks/edit/<%= check.id %>" class="btn-icon" title="Редактировать">
+                          <svg viewBox="0 0 24 24">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                          </svg>
+                        </a>
+                        <button class="btn-icon danger" onclick="deleteCheck('<%= check.id %>')" title="Удалить">
+                          <svg viewBox="0 0 24 24">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          <% } else { %>
+            <div class="empty-state">
+              <div class="empty-icon">📄</div>
+              <h4>Нет чеков</h4>
+              <p>Создайте первый чек, нажав кнопку «Создать чек»</p>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </main>
+  </div>
+  
+  <script>
+    function deleteCheck(id) {
+      if (confirm('Вы уверены, что хотите удалить этот чек?')) {
+        fetch('/checks/delete/' + id, { method: 'DELETE' })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              location.reload();
+            } else {
+              alert('Ошибка удаления');
+            }
+          })
+          .catch(() => alert('Ошибка сервера'));
+      }
+    }
+  </script>
+  
+  <script src="/js/portal.js"></script>
+</body>
+</html>
